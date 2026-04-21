@@ -118,7 +118,11 @@
   .btn-cart-sm { display: inline-flex; align-items: center; gap: 5px; background: var(--amber); color: #000; border: none; border-radius: 5px; padding: 6px 11px; font-weight: 700; font-size: 11px; cursor: pointer; font-family: 'Space Mono', monospace; text-decoration: none; flex-shrink: 0; }
 
   /* TAG INPUT */
-  .tag-input { background: #0f1f0f; border: 1px solid var(--green); color: var(--green); padding: 9px 12px; border-radius: 6px; font-size: 13px; width: 100%; font-family: 'Space Mono', monospace; margin-top: 6px; outline: none; }
+  .tag-input { background: #0f1f0f; border: 1px solid var(--green); color: var(--green); padding: 9px 12px; border-radius: 6px; font-size: 13px; width: 100%; font-family: 'Space Mono', monospace; margin-top: 6px; outline: none; box-sizing: border-box; }
+
+  /* DIM INPUT — champs dimensions */
+  .dim-input { background: #0a180a; border: 1px solid #1a4a1a; color: var(--green); padding: 8px 10px; border-radius: 6px; font-size: 14px; font-weight: 700; width: 100%; font-family: 'Space Mono', monospace; outline: none; box-sizing: border-box; text-align: center; }
+  .dim-input:focus { border-color: var(--green); }
 
   /* COMMISSION */
   .commission-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 12px; }
@@ -195,20 +199,20 @@
     <div id="error-box" style="display:none" class="error-box"></div>
     <div id="fridge-result" style="display:none"></div>
 
-    <!-- Tag affilié -->
-    <div class="card card-blue" style="margin-top:14px">
-      <div style="font-size:10px;color:#4a8aaa;letter-spacing:2px;margin-bottom:6px;font-family:'Space Mono',monospace">🔗 TAG AFFILIÉ AMAZON</div>
-      <div style="font-size:11px;color:#6a9aba;margin-bottom:4px">Ton tag Amazon Partenaires pour toucher tes commissions (6% Maison/Cuisine)</div>
-      <input type="text" id="affiliate-tag" class="tag-input" placeholder="ton-tag-21" value="fridgefit-21" />
-      <div style="font-size:10px;color:#2a4a5a;margin-top:6px">Sans tag = pas de commission · Inscription gratuite : <strong style="color:#4a8aaa">partenaires.amazon.fr</strong></div>
+    <!-- Clé API -->
+    <div class="card" style="margin-top:14px;border-color:#1a3a1a">
+      <div style="font-size:10px;color:#3a6a3a;letter-spacing:2px;margin-bottom:6px;font-family:'Space Mono',monospace">🔑 CLÉ API GOOGLE GEMINI (GRATUIT)</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px;line-height:1.6">Gratuite sur <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--green)">aistudio.google.com/apikey</a> → "Create API Key" · Aucune carte bancaire requise</div>
+      <input type="password" id="api-key-input" class="tag-input" placeholder="AIza…" style="font-family:monospace" />
+      <div style="font-size:9px;color:#1a3a1a;margin-top:6px">🔒 Stockée dans ton navigateur · 1 500 recherches gratuites/jour</div>
     </div>
 
-    <!-- Clé API Anthropic -->
-    <div class="card" style="margin-top:10px;border-color:#1a2a1a">
-      <div style="font-size:10px;color:#3a6a3a;letter-spacing:2px;margin-bottom:6px;font-family:'Space Mono',monospace">🔑 CLÉ API (OBLIGATOIRE)</div>
-      <div style="font-size:10px;color:var(--text3);margin-bottom:6px">Nécessaire pour la recherche IA. Gratuite sur <strong style="color:#4a8a4a">console.anthropic.com</strong> → API Keys</div>
-      <input type="password" id="api-key-input" class="tag-input" placeholder="sk-ant-api03-..." style="font-family:monospace;letter-spacing:1px" />
-      <div style="font-size:9px;color:#1a3a1a;margin-top:5px">🔒 Stockée uniquement dans ton navigateur — jamais envoyée ailleurs que l'API Anthropic</div>
+    <!-- Tag affilié -->
+    <div class="card card-blue" style="margin-top:10px">
+      <div style="font-size:10px;color:#4a8aaa;letter-spacing:2px;margin-bottom:6px;font-family:'Space Mono',monospace">🔗 TAG AFFILIÉ AMAZON</div>
+      <div style="font-size:11px;color:#6a9aba;margin-bottom:4px">Ton tag Amazon Partenaires (6% Maison/Cuisine)</div>
+      <input type="text" id="affiliate-tag" class="tag-input" placeholder="ton-tag-21" value="fridgefit-21" />
+      <div style="font-size:10px;color:#2a4a5a;margin-top:6px">Sans tag = pas de commission · <a href="https://partenaires.amazon.fr" target="_blank" style="color:#4a8aaa">partenaires.amazon.fr</a></div>
     </div>
   </div>
 
@@ -315,7 +319,7 @@ function setEx(el) {
 function getTag() { return document.getElementById('affiliate-tag').value.trim() || 'fridgefit-21'; }
 
 // ═══════════════════════════════════════════════════════════
-// RECHERCHE IA
+// RECHERCHE IA — Google Gemini (gratuit jusqu'à 1500 req/jour)
 // ═══════════════════════════════════════════════════════════
 async function searchFridge() {
   const q = document.getElementById('search-input').value.trim();
@@ -359,45 +363,42 @@ Règles:
 
   const apiKey = document.getElementById('api-key-input').value.trim();
   if (!apiKey) {
-    document.getElementById('error-box').textContent = '❌ Clé API manquante. Saisis ta clé Anthropic en bas de cette page.';
+    document.getElementById('error-box').textContent = '❌ Clé API manquante. Saisis ta clé Google Gemini ci-dessous.';
     document.getElementById('error-box').style.display = 'block';
     document.getElementById('loader').style.display = 'none';
     document.getElementById('search-btn').disabled = false;
     return;
   }
-  // Sauvegarder la clé pour ne pas la ressaisir
   try { localStorage.setItem('ff_api_key', apiKey); } catch(e) {}
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    // API Google Gemini — pas de CORS, fonctionne directement depuis le navigateur
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const res = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1200,
-        messages: [{ role: 'user', content: prompt }]
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.1, maxOutputTokens: 1200 }
       })
     });
     const data = await res.json();
-    const text = (data.content || []).map(c => c.text || '').join('');
+
+    if (data.error) throw new Error(data.error.message);
+
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const clean = text.replace(/```json|```/g, '').trim();
     fridgeData = JSON.parse(clean);
     shelves = (fridgeData.shelves || []).map(s => ({
       name: s.name, w: s.w_cm, h: s.h_cm, d: s.d_cm, usage: s.usage || ''
     }));
-    // Réinitialiser le cache de configs et les choix utilisateur
     Object.keys(_configCache).forEach(k => delete _configCache[k]);
     Object.keys(shelfConfigChoice).forEach(k => delete shelfConfigChoice[k]);
     renderFridgeResult();
     renderFridgeInfoP2();
     document.getElementById('fridge-result').style.display = 'block';
   } catch(e) {
-    document.getElementById('error-box').textContent = '❌ Erreur de connexion. Vérifie ta connexion internet et réessaie.';
+    document.getElementById('error-box').textContent = '❌ Erreur : ' + (e.message || 'Vérifie ta clé API et ta connexion.');
     document.getElementById('error-box').style.display = 'block';
   } finally {
     document.getElementById('loader').style.display = 'none';
@@ -934,7 +935,69 @@ function calculate() {
   goTo(3);
 }
 
-// Entrée clavier + pré-remplissage clé API
+// ═══════════════════════════════════════════════════════════
+// MODE MANUEL — sans API
+// ═══════════════════════════════════════════════════════════
+let manualShelves = [
+  { name: 'Zone haute / Bouteilles', h: 22, usage: 'Bouteilles debout, grands contenants' },
+  { name: 'Clayette 1', h: 20, usage: 'Restes, plats préparés, boîtes' },
+  { name: 'Clayette 2', h: 15, usage: 'Produits laitiers, yaourts, fromages' },
+  { name: 'Clayette 3', h: 20, usage: 'Charcuterie, viandes emballées' },
+  { name: 'Clayette 4', h: 20, usage: 'Restes, plats du jour' },
+  { name: 'Bac légumes 1', h: 15, usage: 'Légumes' },
+];
+
+function renderManualShelves() {
+  const container = document.getElementById('manual-shelves-list');
+  if (!container) return;
+  container.innerHTML = '';
+  manualShelves.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:1fr 60px 28px;gap:6px;align-items:center;margin-bottom:8px;';
+    row.innerHTML = `
+      <input type="text" value="${s.name}" onchange="manualShelves[${i}].name=this.value"
+        style="background:#0a180a;border:1px solid #1a3a1a;color:#a0d0a0;padding:7px 9px;border-radius:5px;font-size:11px;font-family:'Space Mono',monospace;outline:none;width:100%;box-sizing:border-box" />
+      <div style="position:relative">
+        <input type="number" value="${s.h}" min="3" max="40" step="0.5"
+          onchange="manualShelves[${i}].h=parseFloat(this.value)||10"
+          class="dim-input" style="padding-right:22px" />
+        <span style="position:absolute;right:5px;top:50%;transform:translateY(-50%);font-size:9px;color:#2a5a2a;font-family:'Space Mono',monospace;pointer-events:none">cm</span>
+      </div>
+      <button onclick="removeManualShelf(${i})" style="background:none;border:1px solid #2a1a1a;border-radius:5px;color:#4a2a2a;cursor:pointer;font-size:14px;height:32px;width:28px;padding:0">×</button>`;
+    container.appendChild(row);
+  });
+}
+
+function addManualShelf() {
+  manualShelves.push({ name: `Clayette ${manualShelves.length + 1}`, h: 18, usage: '' });
+  renderManualShelves();
+}
+
+function removeManualShelf(i) {
+  manualShelves.splice(i, 1);
+  renderManualShelves();
+}
+
+function goManual() {
+  const w = parseFloat(document.getElementById('fridge-w').value) || 50;
+  const d = parseFloat(document.getElementById('fridge-d').value) || 38;
+  const name = document.getElementById('fridge-name-input').value.trim() || 'Mon Frigo';
+
+  // Lire les hauteurs actuelles depuis les inputs
+  const inputs = document.querySelectorAll('#manual-shelves-list input[type="number"]');
+  inputs.forEach((inp, i) => { if (manualShelves[i]) manualShelves[i].h = parseFloat(inp.value) || 10; });
+
+  fridgeData = { brand: name, model: '', confidence: 'manual' };
+  shelves = manualShelves.map(s => ({ name: s.name, w, h: s.h, d, usage: s.usage || '' }));
+
+  Object.keys(_configCache).forEach(k => delete _configCache[k]);
+  Object.keys(shelfConfigChoice).forEach(k => delete shelfConfigChoice[k]);
+
+  renderFridgeInfoP2();
+  goTo(2);
+}
+
+// Entrée clavier + init clayettes manuelles
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('search-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') searchFridge();
