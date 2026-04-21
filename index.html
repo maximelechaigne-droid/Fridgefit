@@ -202,6 +202,14 @@
       <input type="text" id="affiliate-tag" class="tag-input" placeholder="ton-tag-21" value="fridgefit-21" />
       <div style="font-size:10px;color:#2a4a5a;margin-top:6px">Sans tag = pas de commission · Inscription gratuite : <strong style="color:#4a8aaa">partenaires.amazon.fr</strong></div>
     </div>
+
+    <!-- Clé API Anthropic -->
+    <div class="card" style="margin-top:10px;border-color:#1a2a1a">
+      <div style="font-size:10px;color:#3a6a3a;letter-spacing:2px;margin-bottom:6px;font-family:'Space Mono',monospace">🔑 CLÉ API (OBLIGATOIRE)</div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:6px">Nécessaire pour la recherche IA. Gratuite sur <strong style="color:#4a8a4a">console.anthropic.com</strong> → API Keys</div>
+      <input type="password" id="api-key-input" class="tag-input" placeholder="sk-ant-api03-..." style="font-family:monospace;letter-spacing:1px" />
+      <div style="font-size:9px;color:#1a3a1a;margin-top:5px">🔒 Stockée uniquement dans ton navigateur — jamais envoyée ailleurs que l'API Anthropic</div>
+    </div>
   </div>
 
   <!-- ════════════════════════════════════════════════════════ PAGE 2 -->
@@ -349,10 +357,26 @@ Règles:
 - Donne des hauteurs libres RÉALISTES entre étagères (12-25cm selon type)
 - Si found:false, estime quand même des clayettes plausibles pour la marque`;
 
+  const apiKey = document.getElementById('api-key-input').value.trim();
+  if (!apiKey) {
+    document.getElementById('error-box').textContent = '❌ Clé API manquante. Saisis ta clé Anthropic en bas de cette page.';
+    document.getElementById('error-box').style.display = 'block';
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('search-btn').disabled = false;
+    return;
+  }
+  // Sauvegarder la clé pour ne pas la ressaisir
+  try { localStorage.setItem('ff_api_key', apiKey); } catch(e) {}
+
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1200,
@@ -910,11 +934,16 @@ function calculate() {
   goTo(3);
 }
 
-// Entrée clavier
+// Entrée clavier + pré-remplissage clé API
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('search-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') searchFridge();
   });
+  // Restaurer la clé API sauvegardée
+  try {
+    const saved = localStorage.getItem('ff_api_key');
+    if (saved) document.getElementById('api-key-input').value = saved;
+  } catch(e) {}
 });
 </script>
 </body>
