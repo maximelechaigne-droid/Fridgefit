@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>FridgeFit — Organisez n'importe quel frigo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;600;900&display=swap');
+  :root {
+    --bg: #040d04; --bg2: #070f07; --bg3: #0a160a;
+    --border: #1a2e1a; --border2: #0f1e0f;
+    --green: #4ade80; --green2: #22c55e; --green-dim: #1a4a1a;
+    --text: #d1fad1; --text2: #6a9a6a; --text3: #2a5a2a;
+    --amber: #ff9900; --red: #f87171; --purple: #c4b5fd;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', monospace; min-height: 100vh; }
+
+  /* HEADER */
+  header {
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 14px 18px; display: flex; align-items: center; gap: 8px;
+  }
+  .logo { display: flex; align-items: baseline; gap: 0; }
+  .logo-g { font-family: 'Space Mono', monospace; font-size: 22px; font-weight: 700; color: var(--green); letter-spacing: -1px; }
+  .logo-w { font-family: 'Space Mono', monospace; font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -1px; }
+  .logo-tag { font-size: 9px; color: var(--text3); letter-spacing: 3px; margin-left: 10px; font-family: 'Space Mono', monospace; }
+  .brand-pill { margin-left: auto; background: var(--bg3); border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; font-size: 10px; color: var(--green); font-family: 'Space Mono', monospace; }
+
+  /* STEPS */
+  .steps { display: flex; background: var(--bg2); border-bottom: 1px solid var(--border2); }
+  .step { flex: 1; padding: 10px 6px; font-size: 10px; color: var(--green-dim); border-bottom: 2px solid transparent; text-align: center; font-family: 'Space Mono', monospace; letter-spacing: 1px; cursor: pointer; transition: color 0.2s; }
+  .step.active { color: var(--green); border-bottom: 2px solid var(--green); }
+  .step.done { color: var(--text3); }
+
+  /* LAYOUT */
+  .body { padding: 18px 16px; max-width: 600px; margin: 0 auto; }
+  .section-label { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--text3); letter-spacing: 3px; margin-bottom: 14px; }
+
+  /* CARDS */
+  .card { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+  .card-green { border-color: #1a4a1a; background: #060f06; }
+  .card-amber { border-color: #3a2a0a; background: #0a0a06; }
+  .card-blue { border-color: #1a2a3a; background: #0a1016; }
+
+  /* SEARCH */
+  .search-wrap { position: relative; }
+  .search-input { width: 100%; background: #0f1f0f; border: 1px solid var(--border); color: var(--text); padding: 14px 50px 14px 16px; border-radius: 8px; font-size: 15px; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.2s; }
+  .search-input:focus { border-color: var(--green); }
+  .search-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: var(--green); color: #000; border: none; border-radius: 6px; padding: 8px 14px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: 'Space Mono', monospace; }
+  .search-btn:disabled { background: var(--green-dim); color: var(--text3); cursor: not-allowed; }
+
+  /* EXAMPLE PILLS */
+  .examples { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+  .ex-pill { background: var(--bg3); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; font-size: 11px; color: var(--text2); cursor: pointer; font-family: 'Space Mono', monospace; transition: all 0.15s; }
+  .ex-pill:hover { border-color: var(--green); color: var(--green); }
+
+  /* LOADER */
+  .loader { text-align: center; padding: 28px; }
+  .spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid var(--green-dim); border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* CONFIDENCE BADGE */
+  .badge { font-size: 9px; letter-spacing: 1px; border-radius: 20px; padding: 3px 9px; border: 1px solid; display: inline-block; font-family: 'Space Mono', monospace; }
+  .badge-high { color: var(--green); border-color: var(--green); }
+  .badge-estimated, .badge-medium { color: #fbbf24; border-color: #fbbf24; }
+  .badge-unknown { color: var(--red); border-color: var(--red); }
+
+  /* DATA ROWS */
+  .data-row { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border2); padding: 7px 0; font-size: 12px; }
+  .data-row .k { color: var(--text3); }
+  .data-row .v { color: #a0d0a0; font-family: 'Space Mono', monospace; font-size: 11px; }
+  .data-row .v-green { color: var(--green); font-weight: 700; font-family: 'Space Mono', monospace; }
+
+  /* SHELF EDITOR */
+  .shelf-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+  .shelf-name-input { background: #0f1f0f; border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 5px; font-size: 12px; width: 100%; font-family: 'DM Sans', sans-serif; margin-bottom: 8px; }
+  .shelf-use-lbl { font-size: 10px; color: var(--text3); margin-bottom: 8px; font-style: italic; }
+  .dims-row { display: flex; gap: 6px; }
+  .dim-g { flex: 1; text-align: center; }
+  .dim-g input { background: #0f1f0f; border: 1px solid var(--border); color: var(--text); padding: 9px 4px; border-radius: 5px; font-size: 14px; width: 100%; font-family: 'Space Mono', monospace; text-align: center; }
+  .dim-g input.hl { border-color: var(--green); color: var(--green); background: #0a1a0a; }
+  .dim-lbl { font-size: 9px; color: var(--text3); margin-top: 3px; text-align: center; font-family: 'Space Mono', monospace; }
+  .dim-lbl.hl { color: var(--green); }
+  .shelf-actions { display: flex; justify-content: flex-end; margin-top: 8px; gap: 6px; }
+
+  /* BUTTONS */
+  .btn { border: none; border-radius: 7px; padding: 13px 18px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: 'Space Mono', monospace; letter-spacing: 0.5px; transition: all 0.15s; width: 100%; margin-top: 8px; }
+  .btn-primary { background: var(--green); color: #000; }
+  .btn-primary:hover { background: var(--green2); }
+  .btn-secondary { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--green); color: var(--green); }
+  .btn-sm { padding: 6px 10px; font-size: 10px; border-radius: 5px; border: 1px solid var(--border); background: transparent; color: var(--text3); cursor: pointer; font-family: 'Space Mono', monospace; }
+  .btn-sm:hover { border-color: var(--red); color: var(--red); }
+  .btn-add { background: transparent; border: 1px dashed var(--border); color: var(--text3); border-radius: 7px; padding: 10px; font-size: 12px; cursor: pointer; width: 100%; font-family: 'Space Mono', monospace; margin-top: 4px; margin-bottom: 8px; }
+  .btn-add:hover { border-color: var(--green); color: var(--green); }
+  .two-btn { display: flex; gap: 8px; }
+  .two-btn .btn { flex: 1; margin-top: 0; }
+  .two-btn .btn-primary { flex: 2; }
+
+  /* RESULT SHELF */
+  .result-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+  .r-title { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--green); letter-spacing: 1px; font-weight: 700; margin-bottom: 3px; }
+  .r-use { font-size: 11px; color: var(--text3); margin-bottom: 10px; }
+  .boxes-wrap { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .box-chip { display: flex; align-items: center; gap: 5px; background: #060e06; border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; }
+  .dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+  /* SUMMARY */
+  .summary-card { background: #060f06; border: 1px solid #1e4a1e; border-radius: 10px; padding: 16px; margin-top: 10px; }
+  .s-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; gap: 8px; }
+  .s-total { border-top: 1px solid #1a3a1a; margin-top: 12px; padding-top: 12px; display: flex; justify-content: space-between; align-items: baseline; }
+
+  /* AMAZON CART */
+  .cart-section { background: #0a1a08; border: 1px solid #1e4a10; border-radius: 10px; padding: 16px; margin-top: 12px; }
+  .btn-cart { display: flex; align-items: center; justify-content: center; gap: 10px; background: var(--amber); color: #000; border: none; border-radius: 8px; padding: 16px 20px; font-weight: 900; font-size: 15px; cursor: pointer; width: 100%; font-family: 'Space Mono', monospace; margin-top: 10px; text-decoration: none; transition: background 0.15s; }
+  .btn-cart:hover { background: #ffad33; }
+  .btn-cart-sm { display: inline-flex; align-items: center; gap: 5px; background: var(--amber); color: #000; border: none; border-radius: 5px; padding: 6px 11px; font-weight: 700; font-size: 11px; cursor: pointer; font-family: 'Space Mono', monospace; text-decoration: none; flex-shrink: 0; }
+
+  /* TAG INPUT */
+  .tag-input { background: #0f1f0f; border: 1px solid var(--green); color: var(--green); padding: 9px 12px; border-radius: 6px; font-size: 13px; width: 100%; font-family: 'Space Mono', monospace; margin-top: 6px; outline: none; }
+
+  /* COMMISSION */
+  .commission-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 12px; }
+  .commission-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 12px; }
+
+  /* ERROR */
+  .error-box { background: #1a0a0a; border: 1px solid #3a1a1a; border-radius: 8px; padding: 12px; color: var(--red); font-size: 12px; margin-top: 10px; }
+
+  /* PAGE TOGGLE */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* CANVAS */
+  canvas { border-radius: 5px; display: block; background: #050f05; }
+
+  /* DISCLAIMER */
+  .disclaimer { font-size: 9px; color: #1a3a1a; margin-top: 10px; line-height: 1.6; font-family: 'Space Mono', monospace; }
+
+  /* MOBILE */
+  @media (max-width: 400px) {
+    .logo-g, .logo-w { font-size: 18px; }
+    .btn-cart { font-size: 13px; padding: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-g">FRIDGE</span><span class="logo-w">FIT</span>
+  </div>
+  <span class="logo-tag">AI POWERED</span>
+  <span class="brand-pill">× Duralex™ Freshbox</span>
+</header>
+
+<div class="steps">
+  <div class="step active" id="tab1">01 FRIGO</div>
+  <div class="step" id="tab2">02 CLAYETTES</div>
+  <div class="step" id="tab3">03 KIT VERRE 🛒</div>
+</div>
+
+<div class="body">
+
+  <!-- ════════════════════════════════════════════════════════ PAGE 1 -->
+  <div class="page active" id="page1">
+    <div class="section-label">RECHERCHE PAR RÉFÉRENCE</div>
+
+    <div class="card">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px;line-height:1.7">
+        Tape la référence de ton frigo (étiquette intérieure porte ou notice). L'IA récupère les dimensions automatiquement.
+      </div>
+      <div class="search-wrap">
+        <input type="text" id="search-input" class="search-input" placeholder="ex: Neff KI1811SE0, Bosch KGN39…" />
+        <button class="search-btn" id="search-btn" onclick="searchFridge()">GO →</button>
+      </div>
+      <div class="examples">
+        <span class="ex-pill" onclick="setEx(this)">Neff KI1811SE0</span>
+        <span class="ex-pill" onclick="setEx(this)">Bosch KGN39XIDR</span>
+        <span class="ex-pill" onclick="setEx(this)">Samsung RB38T776CS9</span>
+        <span class="ex-pill" onclick="setEx(this)">LG GBB72PZEFN</span>
+        <span class="ex-pill" onclick="setEx(this)">Liebherr CNef 4813</span>
+        <span class="ex-pill" onclick="setEx(this)">Smeg FAB32ROR5</span>
+        <span class="ex-pill" onclick="setEx(this)">Whirlpool W7X82OOX</span>
+        <span class="ex-pill" onclick="setEx(this)">Siemens KG39NXXDF</span>
+        <span class="ex-pill" onclick="setEx(this)">AEG RCB636E5MW</span>
+        <span class="ex-pill" onclick="setEx(this)">Haier HTF-610DSN7</span>
+      </div>
+    </div>
+
+    <div id="loader" style="display:none" class="loader">
+      <div class="spinner"></div>
+      <div style="font-size:11px;color:var(--text3);letter-spacing:2px;margin-top:12px;font-family:'Space Mono',monospace">INTERROGATION IA…</div>
+    </div>
+    <div id="error-box" style="display:none" class="error-box"></div>
+    <div id="fridge-result" style="display:none"></div>
+
+    <!-- Tag affilié -->
+    <div class="card card-blue" style="margin-top:14px">
+      <div style="font-size:10px;color:#4a8aaa;letter-spacing:2px;margin-bottom:6px;font-family:'Space Mono',monospace">🔗 TAG AFFILIÉ AMAZON</div>
+      <div style="font-size:11px;color:#6a9aba;margin-bottom:4px">Ton tag Amazon Partenaires pour toucher tes commissions (6% Maison/Cuisine)</div>
+      <input type="text" id="affiliate-tag" class="tag-input" placeholder="ton-tag-21" value="fridgefit-21" />
+      <div style="font-size:10px;color:#2a4a5a;margin-top:6px">Sans tag = pas de commission · Inscription gratuite : <strong style="color:#4a8aaa">partenaires.amazon.fr</strong></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════ PAGE 2 -->
+  <div class="page" id="page2">
+    <div class="section-label">AJUSTE TES CLAYETTES</div>
+    <div id="fridge-info-p2"></div>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:14px;line-height:1.7">
+      Modifie uniquement <span style="color:var(--green);font-weight:700">HAUT.</span> selon tes vraies mesures (espace libre entre deux étagères).
+    </p>
+    <div id="shelves-container"></div>
+    <button class="btn-add" onclick="addShelf()">+ Ajouter une clayette</button>
+    <div class="two-btn">
+      <button class="btn btn-secondary" onclick="goTo(1)">← Retour</button>
+      <button class="btn btn-primary" onclick="calculate()">CALCULER MON KIT →</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════ PAGE 3 -->
+  <div class="page" id="page3">
+    <div class="section-label" id="result-label">TON KIT SMARTSTORE™</div>
+    <div id="results-container"></div>
+    <div class="summary-card" id="summary-container"></div>
+
+    <!-- PANIER AMAZON -->
+    <div class="cart-section">
+      <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--green);letter-spacing:2px;margin-bottom:8px">🛒 PANIER AMAZON GROUPÉ</div>
+      <div style="font-size:11px;color:var(--text3);line-height:1.7;margin-bottom:6px">
+        Un clic → toutes les boîtes en verre Duralex Freshbox ajoutées dans ton panier Amazon.fr.
+      </div>
+      <a id="cart-link" href="#" target="_blank" class="btn-cart">
+        🛒 OUVRIR MON PANIER AMAZON.FR →
+      </a>
+      <div id="individual-links" style="margin-top:14px"></div>
+      <div class="disclaimer" id="aff-note"></div>
+
+      <!-- Mention légale obligatoire Amazon Partenaires -->
+      <div style="margin-top:14px;padding:10px 12px;background:#060a06;border:1px solid #0f1e0f;border-radius:6px;font-size:10px;color:#2a4a2a;line-height:1.6;font-family:'Space Mono',monospace">
+        En tant que Partenaire Amazon, je réalise un bénéfice sur les achats remplissant les conditions requises.
+      </div>
+    </div>
+
+    <button class="btn btn-secondary" onclick="goTo(2)" style="margin-top:10px">← Modifier les clayettes</button>
+    <button class="btn btn-secondary" onclick="goTo(1)">🔍 Tester un autre frigo</button>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CATALOGUE DURALEX FRESHBOX — VERRE GIGOGNABLE — ASIN RÉELS AMAZON.FR
+// Fabriqué en France · Verre trempé 6x plus résistant · Emboîtables + Empilables
+// Micro-ondes (sans couvercle) · Congélateur · Lave-vaisselle
+// Couvercle plastique bleu/transparent inclus
+//
+// ASIN Amazon.fr Duralex Freshbox rectangulaires :
+//   XS  0.39L  (10.3×15×4.5cm)   → B09ZBL5WVM  (vendu à l'unité)
+//   S   1.1L   (14.5×19×6.7cm)   → B09ZBL5WVM  (lot de 3 multi-tailles)
+//   M   1.65L  (16.3×21×7.8cm)   → B09ZBL5WVM  (lot de 3 multi-tailles)
+//   L   2.9L   (20×27×9cm)       → B09ZBL5WVM  (lot de 4 multi-tailles)
+//
+// Note : pour l'achat, utiliser le lot de 3 ou 4 tailles différentes
+// qui contient XS+S+M ou S+M+L selon le besoin
+// ═══════════════════════════════════════════════════════════
+const SS = {
+  XS:   { id:'XS',   name:'Freshbox XS 0.39L',  w:10.3, h:4.5, d:15,  color:'#a5f3c0', price:6.50,  label:'Condiments, sauces, petits restes',    vol:'0.39L', asin:'B09ZBL5WVM', covAsin:null, covPrice:0 },
+  S:    { id:'S',    name:'Freshbox S 1.1L',    w:14.5, h:6.7, d:19,  color:'#7dd3e8', price:8.90,  label:'Fromages, charcuterie, yaourts',         vol:'1.1L',  asin:'B09ZBL5WVM', covAsin:null, covPrice:0 },
+  M:    { id:'M',    name:'Freshbox M 1.65L',   w:16.3, h:7.8, d:21,  color:'#c4b5fd', price:11.50, label:'Restes, plats individuels, légumes',     vol:'1.65L', asin:'B09ZBL5WVM', covAsin:null, covPrice:0 },
+  L:    { id:'L',    name:'Freshbox L 2.9L',    w:20,   h:9,   d:27,  color:'#fde68a', price:14.90, label:'Grands plats, salades, fruits coupés',   vol:'2.9L',  asin:'B09ZBL5WVM', covAsin:null, covPrice:0 },
+  SLIM: { id:'SLIM', name:'Freshbox XS 0.39L',  w:10.3, h:4.5, d:15,  color:'#fca5a5', price:6.50,  label:'Viandes plates, poissons, charcuterie',  vol:'0.39L', asin:'B09ZBL5WVM', covAsin:null, covPrice:0 },
+};
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let fridgeData = null;
+let shelves = [];
+const _configCache = {};       // cache configs par dimensions "h_w_d"
+const shelfConfigChoice = {};  // choix utilisateur par index clayette
+
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function goTo(n) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.step').forEach(s => { s.classList.remove('active'); s.classList.remove('done'); });
+  document.getElementById('page' + n).classList.add('active');
+  document.getElementById('tab' + n).classList.add('active');
+  for (let i = 1; i < n; i++) document.getElementById('tab' + i).classList.add('done');
+  window.scrollTo(0, 0);
+  if (n === 2) renderShelves();
+  // Réinitialiser cache et choix si on revient à la recherche
+  if (n === 1) {
+    Object.keys(_configCache).forEach(k => delete _configCache[k]);
+    Object.keys(shelfConfigChoice).forEach(k => delete shelfConfigChoice[k]);
+  }
+}
+
+function setEx(el) {
+  document.getElementById('search-input').value = el.textContent;
+  document.getElementById('search-input').focus();
+}
+
+function getTag() { return document.getElementById('affiliate-tag').value.trim() || 'fridgefit-21'; }
+
+// ═══════════════════════════════════════════════════════════
+// RECHERCHE IA
+// ═══════════════════════════════════════════════════════════
+async function searchFridge() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) return;
+
+  document.getElementById('loader').style.display = 'block';
+  document.getElementById('error-box').style.display = 'none';
+  document.getElementById('fridge-result').style.display = 'none';
+  document.getElementById('search-btn').disabled = true;
+
+  const prompt = `Tu es une base de données d'appareils électroménagers mondial.
+Référence frigo: "${q}"
+
+Réponds UNIQUEMENT en JSON valide, sans texte avant/après ni backticks markdown.
+
+{
+  "found": true,
+  "brand": "Neff",
+  "model": "KI1811SE0",
+  "type": "Réfrigérateur intégrable 1 porte tout utile",
+  "total_dims": {"w_cm": 54.1, "h_cm": 177.2, "d_cm": 54.8},
+  "interior": {"w_cm": 50, "h_cm": 155, "d_cm": 38},
+  "shelves": [
+    {"name": "Zone haute", "w_cm": 50, "h_cm": 22, "d_cm": 38, "usage": "Grands contenants, bouteilles debout"},
+    {"name": "Clayette 1", "w_cm": 50, "h_cm": 20, "d_cm": 38, "usage": "Restes, plats préparés"},
+    {"name": "Clayette 2", "w_cm": 50, "h_cm": 16, "d_cm": 38, "usage": "Fromages, charcuterie"},
+    {"name": "Clayette 3", "w_cm": 50, "h_cm": 20, "d_cm": 38, "usage": "Restes, plats"},
+    {"name": "Bac légumes", "w_cm": 50, "h_cm": 15, "d_cm": 38, "usage": "Fruits et légumes"}
+  ],
+  "confidence": "high",
+  "note": "Données constructeur confirmées"
+}
+
+Règles:
+- confidence: "high" si modèle connu précisément, "estimated" si estimation par gamme/marque, "unknown" si totalement inconnu
+- Calcule les dimensions intérieures réalistes (ext - ~4cm pour parois)
+- Adapte le nombre de clayettes au type: combiné (3-4 niveaux + congélateur), tout utile (5-7 niveaux), américain (2 zones), compact (2-3 niveaux)
+- Pour les combinés, sépare la zone frigo et congélateur
+- Donne des hauteurs libres RÉALISTES entre étagères (12-25cm selon type)
+- Si found:false, estime quand même des clayettes plausibles pour la marque`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1200,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content || []).map(c => c.text || '').join('');
+    const clean = text.replace(/```json|```/g, '').trim();
+    fridgeData = JSON.parse(clean);
+    shelves = (fridgeData.shelves || []).map(s => ({
+      name: s.name, w: s.w_cm, h: s.h_cm, d: s.d_cm, usage: s.usage || ''
+    }));
+    // Réinitialiser le cache de configs et les choix utilisateur
+    Object.keys(_configCache).forEach(k => delete _configCache[k]);
+    Object.keys(shelfConfigChoice).forEach(k => delete shelfConfigChoice[k]);
+    renderFridgeResult();
+    renderFridgeInfoP2();
+    document.getElementById('fridge-result').style.display = 'block';
+  } catch(e) {
+    document.getElementById('error-box').textContent = '❌ Erreur de connexion. Vérifie ta connexion internet et réessaie.';
+    document.getElementById('error-box').style.display = 'block';
+  } finally {
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('search-btn').disabled = false;
+  }
+}
+
+const BADGE_MAP = {
+  high:      { lbl: '✓ Données constructeur', cls: 'badge-high' },
+  medium:    { lbl: '~ Données estimées',      cls: 'badge-estimated' },
+  estimated: { lbl: '~ Estimation par gamme',  cls: 'badge-estimated' },
+  unknown:   { lbl: '⚠ Modèle non reconnu',  cls: 'badge-unknown' },
+};
+
+function renderFridgeResult() {
+  if (!fridgeData) return;
+  const b = BADGE_MAP[fridgeData.confidence] || BADGE_MAP.unknown;
+  const td = fridgeData.total_dims || {};
+  const inn = fridgeData.interior || {};
+  document.getElementById('fridge-result').innerHTML = `
+    <div class="card" style="border-color:${fridgeData.confidence==='high'?'#1a4a1a':'#3a3a0a'};margin-top:4px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div>
+          <div style="font-weight:900;font-size:18px;color:#fff">${fridgeData.brand || ''} ${fridgeData.model || ''}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:2px">${fridgeData.type || ''}</div>
+        </div>
+        <span class="badge ${b.cls}">${b.lbl}</span>
+      </div>
+      ${td.w_cm ? `<div class="data-row"><span class="k">Dimensions ext.</span><span class="v">${td.w_cm} × ${td.h_cm} × ${td.d_cm} cm</span></div>` : ''}
+      ${inn.w_cm ? `<div class="data-row"><span class="k">Intérieur utile</span><span class="v">${inn.w_cm} × ${inn.h_cm} × ${inn.d_cm} cm</span></div>` : ''}
+      <div class="data-row"><span class="k">Clayettes détectées</span><span class="v">${shelves.length} niveaux</span></div>
+      ${fridgeData.note ? `<div style="margin-top:8px;font-size:10px;color:var(--text3);font-style:italic;font-family:'Space Mono',monospace">${fridgeData.note}</div>` : ''}
+    </div>
+    <button class="btn btn-primary" onclick="goTo(2)" style="margin-top:4px">VOIR ET AJUSTER LES CLAYETTES →</button>`;
+}
+
+function renderFridgeInfoP2() {
+  if (!fridgeData) return;
+  document.getElementById('fridge-info-p2').innerHTML = `
+    <div class="card" style="margin-bottom:12px;padding:10px 14px">
+      <span style="font-weight:700;color:#fff">${fridgeData.brand} ${fridgeData.model}</span>
+      <span style="color:var(--text3);font-size:11px;margin-left:8px">${fridgeData.type || ''}</span>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// ÉDITEUR CLAYETTES
+// ═══════════════════════════════════════════════════════════
+function renderShelves() {
+  document.getElementById('shelves-container').innerHTML = shelves.map((s, i) => `
+    <div class="shelf-card">
+      <input type="text" class="shelf-name-input" value="${s.name}" onchange="updS(${i},'name',this.value)" placeholder="Nom de la clayette"/>
+      <div class="shelf-use-lbl">${s.usage || ''}</div>
+      <div class="dims-row">
+        <div class="dim-g">
+          <input type="number" value="${s.w}" onchange="updS(${i},'w',this.value)">
+          <div class="dim-lbl">LARG.</div>
+        </div>
+        <div class="dim-g">
+          <input type="number" class="hl" value="${s.h}" onchange="updS(${i},'h',this.value)">
+          <div class="dim-lbl hl">HAUT. ✏</div>
+        </div>
+        <div class="dim-g">
+          <input type="number" value="${s.d}" onchange="updS(${i},'d',this.value)">
+          <div class="dim-lbl">PROF.</div>
+        </div>
+      </div>
+      <div class="shelf-actions">
+        <button class="btn-sm" onclick="removeShelf(${i})">✕ Supprimer</button>
+      </div>
+    </div>`).join('');
+}
+
+function updS(i, k, v) {
+  if (k === 'name' || k === 'usage') shelves[i][k] = v;
+  else shelves[i][k] = parseFloat(v) || 0;
+}
+
+function addShelf() {
+  const interior = fridgeData?.interior || {};
+  shelves.push({ name: `Clayette ${shelves.length + 1}`, w: interior.w_cm || 50, h: 18, d: interior.d_cm || 35, usage: 'Usage général' });
+  renderShelves();
+}
+
+function removeShelf(i) {
+  shelves.splice(i, 1);
+  renderShelves();
+}
+
+// ═══════════════════════════════════════════════════════════
+// ALGORITHME DE SÉLECTION SMARTSTORE
+// Règles :
+//  - XS uniquement pour petits espaces résiduels < 9cm ou épices
+//  - S = fromages, charcuterie, zones moyennes
+//  - M = restes, plats, espaces 10-14cm
+//  - L = FORCÉ quand H>=15.5 et D>=35 (grand espace)
+//  - SLIM = viandes/poissons/zones plates H<=6.5
+// ═══════════════════════════════════════════════════════════
+function selectBoxes(shelf) {
+  const n = shelf.name.toLowerCase() + ' ' + (shelf.usage || '').toLowerCase();
+  const h = shelf.h, w = shelf.w, d = shelf.d;
+  // fits: la boîte rentre physiquement (marge 0.3cm hauteur, 3cm profondeur ok)
+  const fits = b => b.h + 0.3 <= h && b.w <= w && b.d <= d + 3;
+
+  let sel = [];
+
+  // 0. Congélateur → skip
+  if (n.includes('congél') || n.includes('freezer')) return [];
+
+  // 1. SLIM (h<=6.5) : viandes, poissons, plats plats
+  if (n.includes('viande') || n.includes('poisson') || n.includes('froide') || n.includes('basse') || h <= 6.5) {
+    if (fits(SS.SLIM)) {
+      const c = Math.floor(w / SS.SLIM.w);
+      if (c > 0) sel.push({...SS.SLIM, cols:c, rows:Math.max(1, Math.floor(d/SS.SLIM.d))});
+    }
+    // Espace restant → S (jamais XS ici)
+    const rw = w - (sel[0] ? sel[0].cols * SS.SLIM.w : 0);
+    if (rw >= SS.S.w && fits(SS.S)) {
+      const c = Math.floor(rw / SS.S.w);
+      if (c > 0) sel.push({...SS.S, cols:c, rows:Math.max(1, Math.floor(d/SS.S.d))});
+    }
+
+  // 2. Fromage / charcuterie / h 7-10cm → S prioritaire
+  } else if (n.includes('fromage') || n.includes('charcut') || n.includes('yaourt') || (h > 6.5 && h <= 10)) {
+    if (fits(SS.S)) {
+      const c = Math.floor(w / SS.S.w);
+      if (c > 0) sel.push({...SS.S, cols:c, rows:Math.max(1, Math.floor(d/SS.S.d))});
+    }
+    // Espace restant → S encore (pas XS)
+    const rw = w - (sel[0] ? sel[0].cols * SS.S.w : 0);
+    if (rw >= SS.S.w && fits(SS.S)) {
+      const c = Math.floor(rw / SS.S.w);
+      if (c > 0) sel.push({...SS.S, cols:c, rows:Math.max(1, Math.floor(d/SS.S.d))});
+    }
+
+  // 3. Grand espace (H>=15.5 et D>=35) → L en priorité absolue
+  } else if (h >= 15.5 && d >= 35 && fits(SS.L)) {
+    const c = Math.floor(w / SS.L.w);
+    if (c > 0) sel.push({...SS.L, cols:c, rows:1});
+    // Espace restant → S
+    const rw = w - sel[0].cols * SS.L.w;
+    if (rw >= SS.S.w && fits(SS.S)) {
+      const c2 = Math.floor(rw / SS.S.w);
+      if (c2 > 0) sel.push({...SS.S, cols:c2, rows:Math.max(1, Math.floor(d/SS.S.d))});
+    }
+
+  // 4. Espace large (H>=12 mais pas L) → M prioritaire
+  } else if (h >= 12) {
+    if (fits(SS.M)) {
+      const c = Math.floor(w / SS.M.w);
+      if (c > 0) sel.push({...SS.M, cols:c, rows:Math.max(1, Math.floor(d/SS.M.d))});
+    }
+    // Espace restant → S (jamais XS)
+    const usedW = sel[0] ? sel[0].cols * SS.M.w : 0;
+    const rw = w - usedW;
+    if (rw >= SS.S.w && fits(SS.S)) {
+      const c = Math.floor(rw / SS.S.w);
+      if (c > 0) sel.push({...SS.S, cols:c, rows:Math.max(1, Math.floor(d/SS.S.d))});
+    }
+
+  // 5. Espace moyen (H 10-12) → M + S
+  } else if (h >= 10) {
+    if (fits(SS.M)) {
+      const c = Math.floor(w / SS.M.w);
+      if (c > 0) sel.push({...SS.M, cols:c, rows:Math.max(1, Math.floor(d/SS.M.d))});
+    }
+    const rw = w - (sel[0] ? sel[0].cols * SS.M.w : 0);
+    if (rw >= SS.S.w && fits(SS.S)) {
+      const c = Math.floor(rw / SS.S.w);
+      if (c > 0) sel.push({...SS.S, cols:c, rows:Math.max(1, Math.floor(d/SS.S.d))});
+    }
+
+  // 6. Petit espace (H 7-10) → S uniquement
+  } else {
+    if (fits(SS.S)) {
+      const c = Math.floor(w / SS.S.w);
+      if (c > 0) sel.push({...SS.S, cols:c, rows:Math.max(1, Math.floor(d/SS.S.d))});
+    }
+  }
+
+  return sel.filter(b => b.cols > 0).map(b => ({ ...b, count: b.cols * b.rows }));
+}
+
+// ═══════════════════════════════════════════════════════════
+// SYSTÈME DE NIVEAUX — séquence du + grand au + petit
+// L'utilisateur navigue avec + / - pour plus ou moins de boîtes
+// Mêmes dimensions → même séquence (cache)
+// ═══════════════════════════════════════════════════════════
+
+const CONFIG_NOTES = {
+  'L+S':   '🟡 Boîte L pour grands plats (lasagnes, gratin, rôti…), boîtes S pour accompagnements, fromages et petits restes.',
+  'L':     '🟡 Format L idéal pour les grands plats cuisinés, salades composées et légumes entiers (plat pour 3-4 personnes).',
+  'M+S':   '🟣 Boîtes M pour les plats du quotidien et légumes, boîtes S pour fromages, charcuterie et petits restes.',
+  'M+XS':  '🟣 Boîtes M pour restes et légumes, boîtes XS pour condiments, sauces et toutes petites quantités.',
+  'M':     '🟣 Format M polyvalent : parfait pour les restes d\'un plat pour 2, légumes coupés ou batch cooking.',
+  'S+XS':  '🔵 Boîtes S pour fromages et charcuterie, boîtes XS pour petits condiments et restes minuscules.',
+  'S':     '🔵 Format S idéal pour fromages, yaourts, charcuterie, fruits coupés — les produits du quotidien.',
+  'XS':    '🟢 Format XS pour condiments, sauces, épices humides et toutes petites portions — zéro gaspillage.',
+  'SLIM+S':'🔴 Slim ultra-plat pour viandes et poissons à plat, S pour fromages côte à côte.',
+  'SLIM':  '🔴 Format Slim ultra-plat pour viandes, poissons, charcuterie à plat dans les espaces les plus resserrés.',
+};
+
+function noteForBoxes(boxes) {
+  const key = boxes.map(b => b.id).join('+');
+  return CONFIG_NOTES[key] || CONFIG_NOTES[boxes[0]?.id] || 'Rangement optimisé pour cet espace.';
+}
+
+function getLevels(shelf) {
+  const h = shelf.h, w = shelf.w, d = shelf.d;
+  const cacheKey = `levels_${h}_${w}_${d}`;
+  if (_configCache[cacheKey]) return _configCache[cacheKey];
+
+  const fits = b => b.h + 0.3 <= h && b.d <= d + 3 && b.w <= w;
+
+  function buildLevel(boxList) {
+    const boxes = [];
+    let usedW = 0;
+    for (const box of boxList) {
+      if (!fits(box)) continue;
+      const remW = w - usedW;
+      if (remW < box.w) continue;
+      const cols = Math.floor(remW / box.w);
+      if (cols < 1) continue;
+      const rows = Math.max(1, Math.floor(d / box.d));
+      boxes.push({ ...box, cols, rows, count: cols * rows });
+      usedW += cols * box.w;
+    }
+    if (boxes.length === 0) return null;
+    return { boxes, note: noteForBoxes(boxes) };
+  }
+
+  const sequence = [];
+
+  if (h <= 6.5) {
+    const l = buildLevel([SS.SLIM, SS.S]);
+    if (l) sequence.push(l);
+  } else {
+    // Du plus grand au plus petit
+    [
+      [SS.L, SS.S],
+      [SS.M, SS.S],
+      [SS.M, SS.XS],
+      [SS.S],
+      [SS.S, SS.XS],
+      [SS.XS],
+    ].forEach(combo => {
+      const l = buildLevel(combo);
+      if (!l) return;
+      const key = l.boxes.map(b => b.id + b.cols + b.rows).join('|');
+      if (!sequence.some(s => s.boxes.map(b => b.id + b.cols + b.rows).join('|') === key)) {
+        sequence.push(l);
+      }
+    });
+  }
+
+  return (_configCache[cacheKey] = sequence.length > 0 ? sequence : null);
+}
+
+// Alias pour compatibilité avec le code existant
+function getAllConfigs(shelf) { return getLevels(shelf); }
+
+// ═══════════════════════════════════════════════════════════
+// DESSIN CANVAS — vue de dessus, rangées avant + arrière
+// ═══════════════════════════════════════════════════════════
+function drawShelf(canvas, shelf, boxes) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const maxRows = Math.max(...boxes.map(b => b.rows), 1);
+  const rowH = H / maxRows;          // hauteur par rangée (avant / arrière)
+  const sc = W / shelf.w;            // pixels par cm de largeur
+
+  // Fond
+  ctx.fillStyle = '#050f05';
+  ctx.fillRect(0, 0, W, H);
+
+  // Séparateur avant/arrière si 2 rangées
+  if (maxRows >= 2) {
+    ctx.strokeStyle = '#1a3a1a'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(0, rowH); ctx.lineTo(W, rowH); ctx.stroke();
+    ctx.setLineDash([]);
+    // Labels rangées
+    ctx.fillStyle = '#1a4a1a'; ctx.font = '7px monospace'; ctx.textBaseline = 'top';
+    ctx.textAlign = 'left';
+    ctx.fillText('AVANT', 3, 2);
+    ctx.fillText('FOND', 3, rowH + 2);
+  }
+
+  let cursorX = 0;
+  boxes.forEach(box => {
+    const boxW = box.w * sc;
+    for (let col = 0; col < box.cols; col++) {
+      const x = cursorX + col * boxW;
+      for (let row = 0; row < box.rows; row++) {
+        const y = row * rowH;
+        const opacity = row === 0 ? 0.92 : 0.65; // avant plus vif, fond plus sombre
+
+        // Ombre
+        ctx.globalAlpha = 0.2;
+        ctx.fillStyle = '#000';
+        ctx.beginPath(); ctx.roundRect(x+3, y+3, boxW-4, rowH-4, 4); ctx.fill();
+
+        // Corps
+        ctx.globalAlpha = opacity;
+        ctx.fillStyle = box.color;
+        ctx.beginPath(); ctx.roundRect(x+2, y+2, boxW-4, rowH-4, 4); ctx.fill();
+
+        // Reflet
+        ctx.globalAlpha = 1;
+        const grad = ctx.createLinearGradient(x, y, x, y + rowH * 0.4);
+        grad.addColorStop(0, 'rgba(255,255,255,0.2)');
+        grad.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.roundRect(x+2, y+2, boxW-4, rowH*0.4, 4); ctx.fill();
+
+        // Label au centre de chaque boîte
+        if (boxW > 12) {
+          ctx.fillStyle = 'rgba(0,0,0,0.8)';
+          ctx.font = `bold ${Math.max(7, Math.min(10, boxW/2.8))}px monospace`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(box.id, x + boxW/2, y + rowH/2);
+        }
+      }
+    }
+    cursorX += box.cols * boxW;
+  });
+
+  // Zone vide en largeur
+  ctx.globalAlpha = 1;
+  if (cursorX < W - 2) {
+    ctx.fillStyle = 'rgba(74,222,128,0.06)';
+    ctx.fillRect(cursorX+1, 1, W-cursorX-2, H-2);
+    ctx.fillStyle = '#1a3a1a'; ctx.font = '8px monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    if (W - cursorX > 18) ctx.fillText('∅', cursorX + (W-cursorX)/2, H/2);
+  }
+
+  // Bord
+  ctx.strokeStyle = '#1a2e1a'; ctx.lineWidth = 1;
+  ctx.strokeRect(0.5, 0.5, W-1, H-1);
+}
+
+// ═══════════════════════════════════════════════════════════
+// CALCUL + RÉSULTAT
+// ═══════════════════════════════════════════════════════════
+function buildCartUrl(items, tag) {
+  let url = 'https://www.amazon.fr/gp/aws/cart/add.html?';
+  const p = [];
+  items.forEach((it, i) => { p.push(`ASIN.${i+1}=${it.asin}&Quantity.${i+1}=${it.qty}`); });
+  p.push(`tag=${tag}`);
+  return url + p.join('&');
+}
+
+function calculate() {
+  const tag = getTag();
+
+  // NE PAS vider le cache ici — les configs sont stables pour un même frigo
+  // Le cache est vidé seulement dans searchFridge() lors d'un nouveau frigo
+
+  // Calculer toutes les configs pour chaque clayette
+  const results = shelves.map((s, i) => ({
+    shelf: s,
+    shelfIdx: i,
+    configs: getAllConfigs(s),
+  }));
+
+  const rc = document.getElementById('results-container');
+  rc.innerHTML = '';
+
+  results.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'result-card';
+
+    const isCongel = r.shelf.name.toLowerCase().includes('congél') || r.shelf.name.toLowerCase().includes('freezer') || (r.shelf.usage||'').toLowerCase().includes('congél');
+    if (isCongel) {
+      div.innerHTML = `<div class="r-title">${r.shelf.name.toUpperCase()}</div><div style="font-size:10px;color:var(--text3);padding:4px 0">❄️ Zone congélateur — non incluse.</div>`;
+      rc.appendChild(div); return;
+    }
+
+    // Détecter si d'autres clayettes ont les mêmes dimensions
+    const sameKey = `${r.shelf.h}_${r.shelf.w}_${r.shelf.d}`;
+    const twins = results.filter(x => `${x.shelf.h}_${x.shelf.w}_${x.shelf.d}` === sameKey && x.shelfIdx !== r.shelfIdx);
+    const twinBadge = twins.length > 0
+      ? `<span style="font-size:9px;background:#1a3a1a;border:1px solid #2a5a2a;border-radius:10px;padding:2px 7px;color:#4a9a4a;margin-left:8px;font-family:'Space Mono',monospace">= ${twins.map(t=>t.shelf.name).join(', ')}</span>`
+      : '';
+
+    div.innerHTML = `<div class="r-title" style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">${r.shelf.name.toUpperCase()} <span style="color:#1e4a1e;font-weight:400;font-size:9px">${r.shelf.w}×${r.shelf.h}×${r.shelf.d}cm</span>${twinBadge}</div><div class="r-use">${r.shelf.usage || ''}</div>`;
+
+    if (!r.configs || r.configs.length === 0) {
+      div.innerHTML += '<div style="font-size:10px;color:var(--text3);padding:4px 0">Espace insuffisant pour les boîtes disponibles.</div>';
+      rc.appendChild(div);
+      return;
+    }
+
+    const levels = r.configs;
+    const curIdx = Math.min(shelfConfigChoice[r.shelfIdx] || 0, levels.length - 1);
+    const chosen = levels[curIdx];
+    if (!chosen) { rc.appendChild(div); return; }
+
+    // ── Navigateur +/- ──────────────────────────────────────
+    const navDiv = document.createElement('div');
+    navDiv.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:10px;';
+
+    const btnMinus = document.createElement('button');
+    btnMinus.textContent = '−';
+    btnMinus.title = 'Moins de boîtes (plus grandes)';
+    btnMinus.style.cssText = `width:32px;height:32px;border-radius:6px;font-size:16px;font-weight:900;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:${curIdx === 0 ? '#2a4a2a' : 'var(--green)'};transition:all 0.15s;flex-shrink:0;`;
+    btnMinus.disabled = curIdx === 0;
+    btnMinus.onclick = () => { shelfConfigChoice[r.shelfIdx] = Math.max(0, curIdx - 1); calculate(); };
+
+    const labelDiv = document.createElement('div');
+    labelDiv.style.cssText = 'flex:1;text-align:center;';
+    // Résumé de la config courante
+    const boxSummary = chosen.boxes.map(b => `${b.cols * b.rows}× ${b.id}`).join(' + ');
+    const totalBoxes = chosen.boxes.reduce((s, b) => s + b.cols * b.rows, 0);
+    labelDiv.innerHTML = `
+      <div style="font-size:11px;font-weight:700;color:#fff;font-family:'Space Mono',monospace">${boxSummary}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px">${totalBoxes} boîte${totalBoxes > 1 ? 's' : ''} · niveau ${curIdx + 1}/${levels.length}</div>`;
+
+    const btnPlus = document.createElement('button');
+    btnPlus.textContent = '+';
+    btnPlus.title = 'Plus de boîtes (plus petites)';
+    btnPlus.style.cssText = `width:32px;height:32px;border-radius:6px;font-size:16px;font-weight:900;cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:${curIdx === levels.length - 1 ? '#2a4a2a' : 'var(--green)'};transition:all 0.15s;flex-shrink:0;`;
+    btnPlus.disabled = curIdx === levels.length - 1;
+    btnPlus.onclick = () => { shelfConfigChoice[r.shelfIdx] = Math.min(levels.length - 1, curIdx + 1); calculate(); };
+
+    navDiv.appendChild(btnMinus);
+    navDiv.appendChild(labelDiv);
+    navDiv.appendChild(btnPlus);
+    div.appendChild(navDiv);
+
+    // ── Note contextuelle ────────────────────────────────────
+    const noteDiv = document.createElement('div');
+    noteDiv.style.cssText = 'font-size:10px;color:#4a8a4a;line-height:1.55;margin-bottom:8px;padding:7px 10px;background:#050f05;border-left:2px solid #1a4a1a;border-radius:0 4px 4px 0;';
+    noteDiv.textContent = chosen.note;
+    div.appendChild(noteDiv);
+
+    // ── Canvas — vue de dessus avec rangées avant/arrière ────
+    const maxRows = Math.max(...chosen.boxes.map(b => b.rows), 1);
+    const cvH = Math.min(130, Math.max(52, maxRows * 54));
+    const cv = document.createElement('canvas');
+    cv.width = 290; cv.height = cvH;
+    div.appendChild(cv);
+    setTimeout(() => drawShelf(cv, r.shelf, chosen.boxes), 0);
+
+    // ── Chips boîtes ─────────────────────────────────────────
+    const wrap = document.createElement('div');
+    wrap.className = 'boxes-wrap';
+    chosen.boxes.forEach(b => {
+      wrap.innerHTML += `<div class="box-chip"><div class="dot" style="background:${b.color}"></div><span style="font-size:11px;color:#a0d0a0;font-weight:600">${b.count}× ${b.name}</span><span style="font-size:9px;color:var(--text3)">${b.label}</span></div>`;
+    });
+    div.appendChild(wrap);
+    rc.appendChild(div);
+  });
+
+  // ── Récap : agréger par ID de boîte (pas par ASIN car plusieurs tailles = même ASIN)
+  const idMap = {}; // { id → {box, qty} }
+
+  results.forEach(r => {
+    const isCongel = r.shelf.name.toLowerCase().includes('congél') || r.shelf.name.toLowerCase().includes('freezer') || (r.shelf.usage||'').toLowerCase().includes('congél');
+    if (isCongel) return;
+    if (!r.configs || r.configs.length === 0) return;
+    const chosenIdx = shelfConfigChoice[r.shelfIdx] || 0;
+    const chosen = r.configs[Math.min(chosenIdx, r.configs.length - 1)];
+    if (!chosen || !chosen.boxes) return;
+    chosen.boxes.forEach(b => {
+      if (!b.asin) return;
+      // Clé = id (XS, S, M, L, SLIM) pour séparer les tailles même si même ASIN
+      const key = b.id;
+      if (!idMap[key]) idMap[key] = { ...b, qty: 0 };
+      idMap[key].qty += b.count;
+    });
+  });
+
+  // Récap HTML
+  let totalPrice = 0, totalQty = 0;
+  let sumHtml = `<div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--green);letter-spacing:2px;margin-bottom:14px">RÉCAP COMMANDE — CONFIGS SÉLECTIONNÉES</div>`;
+
+  // Construire les cartItems en dédupliquant les ASIN identiques
+  const cartAsinMap = {}; // { asin → qty } pour le panier Amazon
+  const cartItems = [];
+
+  sumHtml += `<div style="font-size:10px;color:var(--text3);letter-spacing:1px;margin-bottom:6px;font-family:'Space Mono',monospace">📦 BOÎTES EN VERRE DURALEX FRESHBOX</div>`;
+  Object.values(idMap).forEach(b => {
+    const t = b.price * b.qty;
+    totalPrice += t; totalQty += b.qty;
+    // Agréger les qtés par ASIN pour le panier Amazon
+    if (!cartAsinMap[b.asin]) cartAsinMap[b.asin] = 0;
+    cartAsinMap[b.asin] += b.qty;
+    sumHtml += `<div class="s-row">
+      <div style="display:flex;align-items:flex-start;gap:8px;flex:1">
+        <div class="dot" style="background:${b.color};margin-top:3px"></div>
+        <div>
+          <div style="font-size:12px;font-weight:700">${b.qty}× Duralex ${b.name}</div>
+          <div style="font-size:10px;color:var(--text3)">${b.label} · ${b.vol}</div>
+          <div style="font-size:9px;color:#1e4a1e;font-family:'Space Mono',monospace">ASIN: ${b.asin} · ${b.price.toFixed(2)}€/u</div>
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0"><div style="color:var(--green);font-weight:900;font-size:13px">${t.toFixed(2)}€</div></div>
+    </div>`;
+  });
+
+  // Construire cartItems depuis cartAsinMap (qtés dédupliquées par ASIN)
+  Object.entries(cartAsinMap).forEach(([asin, qty]) => cartItems.push({ asin, qty }));
+
+  // Luminarc : couvercle inclus → pas de section couvercles séparée
+  // On ajoute juste une note dans le récap
+  sumHtml += `<div style="font-size:10px;color:var(--text3);margin:8px 0;font-style:italic">✓ Couvercle plastique inclus · S'emboîtent les unes dans les autres · Made in France</div>`;
+
+  sumHtml += `<div style="font-size:11px;color:var(--text3);border-top:1px solid #1a3a1a;margin-top:10px;padding-top:8px;margin-bottom:6px">${totalQty} boîtes en verre Duralex Freshbox · ${fridgeData ? fridgeData.brand + ' ' + fridgeData.model : ''}</div>
+  <div class="s-total">
+    <span style="font-family:'Space Mono',monospace;font-size:14px">TOTAL PANIER</span>
+    <span style="color:var(--green);font-size:20px;font-weight:900">${totalPrice.toFixed(2)} €</span>
+  </div>`;
+  document.getElementById('summary-container').innerHTML = sumHtml;
+
+  if (fridgeData) document.getElementById('result-label').textContent = `TON KIT — ${fridgeData.brand} ${fridgeData.model}`;
+
+  document.getElementById('cart-link').href = buildCartUrl(cartItems, tag);
+
+  let indHtml = `<div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:1px;margin-bottom:8px">OU ARTICLE PAR ARTICLE :</div>`;
+  Object.values(idMap).forEach(b => {
+    const url = `https://www.amazon.fr/dp/${b.asin}?tag=${tag}`;
+    const qty = b.qty;
+    const price = b.price || 0;
+    indHtml += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;flex-wrap:wrap">
+      <div><div style="font-size:11px;color:#fff;font-weight:700">${qty}× Duralex ${b.name}</div><div style="font-size:10px;color:var(--text3)">${(price*qty).toFixed(2)}€</div></div>
+      <a href="${url}" target="_blank" class="btn-cart-sm">🛒 Amazon.fr</a>
+    </div>`;
+  });
+  document.getElementById('individual-links').innerHTML = indHtml;
+
+  document.getElementById('aff-note').innerHTML = `🔗 Tag actif : <strong style="color:var(--green)">${tag}</strong> · <a href="https://partenaires.amazon.fr" target="_blank" style="color:var(--text3)">partenaires.amazon.fr</a>`;
+
+  goTo(3);
+}
+
+// Entrée clavier
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('search-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') searchFridge();
+  });
+});
+</script>
+</body>
+</html>
