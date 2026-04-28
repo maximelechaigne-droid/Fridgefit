@@ -555,6 +555,7 @@ function buildCartUrl(items,tag){
 }
 
 function calculate(fromNav=false){
+  const scrollY = fromNav ? window.scrollY : 0;
   const tag=getTag();
   const results=shelves.map((s,i)=>({shelf:s,shelfIdx:i,configs:getAllConfigs(s)}));
   const rc=document.getElementById('results-container'); rc.innerHTML='';
@@ -693,6 +694,7 @@ function calculate(fromNav=false){
   document.getElementById('individual-links').innerHTML=indHtml;
   document.getElementById('aff-note').innerHTML=`<a href="https://partenaires.amazon.fr" target="_blank" style="color:var(--text3)">Programme Partenaires Amazon</a>`;
   goTo(3, fromNav);
+  if(fromNav) requestAnimationFrame(()=> window.scrollTo(0, scrollY));
 }
 
 // ═══════════════════════════════════════════════════════════
