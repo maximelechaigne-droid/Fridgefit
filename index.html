@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<!-- v4.1 --><title>FridgeFit — Organisez n'importe quel frigo</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #0d0f1a;
+  --bg2:     #13162b;
+  --bg3:     #1a1e35;
+  --border:  rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.04);
+  --accent:  #7c6fff;
+  --accent2: #a89fff;
+  --teal:    #34d399;
+  --amber:   #fbbf24;
+  --rose:    #f87171;
+  --text:    #f0f1f8;
+  --text2:   #9aa0c0;
+  --text3:   #525880;
+  --glass:   rgba(255,255,255,0.045);
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body {
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse 70% 45% at 15% -5%, rgba(124,111,255,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 40% at 85% 105%, rgba(52,211,153,0.08) 0%, transparent 55%);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+header {
+  background: rgba(13,15,26,0.9);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  display: flex; align-items: center; gap: 12px;
+  position: sticky; top: 0; z-index: 100;
+}
+.logo {
+  font-size: 20px; font-weight: 800; letter-spacing: -0.3px;
+  color: #fff;
+}
+.logo span { color: var(--accent2); }
+.logo-sub { font-size: 10px; color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase; font-weight: 500; }
+.brand-pill {
+  margin-left: auto;
+  background: rgba(124,111,255,0.1);
+  border: 1px solid rgba(124,111,255,0.2);
+  border-radius: 20px; padding: 4px 12px;
+  font-size: 12px; color: var(--accent2); font-weight: 500;
+}
+
+/* ── STEPS ── */
+.steps { display:flex; background:rgba(13,15,26,0.75); backdrop-filter:blur(10px); border-bottom:1px solid var(--border2); }
+.step {
+  flex:1; padding:12px 6px; font-size:12px; font-weight:600;
+  color:var(--text3); border-bottom:2px solid transparent;
+  text-align:center; cursor:pointer; transition:all 0.2s;
+}
+.step.active { color:var(--accent2); border-bottom-color:var(--accent); }
+.step.done { color:var(--teal); }
+
+/* ── LAYOUT ── */
+.body { padding:22px 18px 50px; max-width:600px; margin:0 auto; }
+.section-label { font-size:11px; font-weight:700; color:var(--text3); letter-spacing:2px; text-transform:uppercase; margin-bottom:18px; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius:16px; padding:18px;
+  margin-bottom:14px;
+  backdrop-filter:blur(8px);
+}
+.card-accent { border-color:rgba(124,111,255,0.18); background:rgba(124,111,255,0.06); }
+
+/* ── SEARCH ── */
+.search-wrap { position:relative; }
+.search-input {
+  width:100%; background:rgba(255,255,255,0.05);
+  border:1px solid var(--border); color:var(--text);
+  padding:14px 110px 14px 18px; border-radius:12px;
+  font-size:15px; font-family:inherit; outline:none; transition:all 0.2s;
+}
+.search-input:focus { border-color:rgba(124,111,255,0.5); background:rgba(124,111,255,0.06); box-shadow:0 0 0 3px rgba(124,111,255,0.1); }
+.search-input::placeholder { color:var(--text3); }
+.search-btn {
+  position:absolute; right:8px; top:50%; transform:translateY(-50%);
+  background:linear-gradient(135deg,#7c6fff,#a89fff);
+  color:#fff; border:none; border-radius:9px; padding:9px 18px;
+  font-weight:700; font-size:13px; cursor:pointer; font-family:inherit;
+  box-shadow:0 2px 12px rgba(124,111,255,0.35); transition:opacity 0.15s;
+}
+.search-btn:hover { opacity:0.9; }
+.search-btn:disabled { opacity:0.35; cursor:not-allowed; }
+.examples { display:flex; flex-wrap:wrap; gap:7px; margin-top:14px; }
+.ex-pill {
+  background:rgba(255,255,255,0.04); border:1px solid var(--border);
+  border-radius:20px; padding:5px 14px; font-size:12px;
+  color:var(--text2); cursor:pointer; font-weight:500; transition:all 0.15s;
+}
+.ex-pill:hover { border-color:rgba(124,111,255,0.4); color:var(--accent2); }
+
+/* ── LOADER ── */
+.loader { text-align:center; padding:36px; }
+.spinner { display:inline-block; width:30px; height:30px; border:2px solid rgba(124,111,255,0.2); border-top-color:var(--accent); border-radius:50%; animation:spin 0.7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── BADGES ── */
+.badge { font-size:11px; font-weight:600; border-radius:20px; padding:3px 11px; border:1px solid; display:inline-block; }
+.badge-high      { color:var(--teal); border-color:rgba(52,211,153,0.35); background:rgba(52,211,153,0.08); }
+.badge-estimated { color:var(--amber); border-color:rgba(251,191,36,0.35); background:rgba(251,191,36,0.08); }
+.badge-unknown   { color:var(--rose); border-color:rgba(248,113,113,0.35); background:rgba(248,113,113,0.08); }
+
+/* ── DATA ROWS ── */
+.data-row { display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border2); padding:8px 0; }
+.data-row .k { font-size:13px; color:var(--text3); font-weight:500; }
+.data-row .v  { font-size:13px; color:var(--text2); font-weight:500; }
+.data-row .va { font-size:13px; color:var(--accent2); font-weight:600; }
+
+/* ── SHELF EDITOR ── */
+.shelf-card { background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:10px; }
+.shelf-name-input {
+  background:rgba(255,255,255,0.05); border:1px solid var(--border);
+  color:var(--text); padding:8px 14px; border-radius:9px;
+  font-size:14px; font-weight:500; width:100%; font-family:inherit;
+  margin-bottom:12px; outline:none; transition:border-color 0.2s;
+}
+.shelf-use-lbl { font-size:12px; color:var(--text3); margin-bottom:12px; font-style:italic; }
+.dims-row { display:flex; gap:8px; }
+.dim-g { flex:1; text-align:center; }
+.dim-g input {
+  background:rgba(255,255,255,0.05); border:1px solid var(--border);
+  color:var(--text); padding:10px 4px; border-radius:9px;
+  font-size:16px; font-weight:700; width:100%; text-align:center;
+  outline:none; transition:all 0.2s; font-family:inherit;
+}
+.dim-g input.hl { border-color:rgba(124,111,255,0.5); color:var(--accent2); background:rgba(124,111,255,0.08); }
+.dim-lbl { font-size:10px; color:var(--text3); margin-top:5px; letter-spacing:1px; text-transform:uppercase; font-weight:600; }
+.dim-lbl.hl { color:var(--accent2); }
+.shelf-actions { display:flex; justify-content:flex-end; margin-top:12px; }
+
+/* ── BUTTONS ── */
+.btn { border:none; border-radius:11px; padding:14px 20px; font-weight:700; font-size:14px; cursor:pointer; font-family:inherit; transition:all 0.15s; width:100%; margin-top:10px; }
+.btn-primary { background:linear-gradient(135deg,#7c6fff,#a89fff); color:#fff; box-shadow:0 4px 18px rgba(124,111,255,0.3); }
+.btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 24px rgba(124,111,255,0.4); }
+.btn-secondary { background:rgba(255,255,255,0.05); color:var(--text2); border:1px solid var(--border); }
+.btn-secondary:hover { border-color:rgba(124,111,255,0.3); color:var(--accent2); }
+.btn-sm { padding:6px 13px; font-size:12px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--text3); cursor:pointer; font-family:inherit; font-weight:600; transition:all 0.15s; }
+.btn-sm:hover { border-color:rgba(248,113,113,0.4); color:var(--rose); }
+.btn-add { background:transparent; border:1px dashed rgba(255,255,255,0.1); color:var(--text3); border-radius:11px; padding:13px; font-size:13px; cursor:pointer; width:100%; font-family:inherit; margin-top:4px; margin-bottom:10px; transition:all 0.15s; font-weight:600; }
+.btn-add:hover { border-color:rgba(124,111,255,0.4); color:var(--accent2); }
+.two-btn { display:flex; gap:10px; }
+.two-btn .btn { flex:1; margin-top:0; }
+.two-btn .btn-primary { flex:2; }
+
+/* ── RESULT CARDS ── */
+.result-card { background:var(--glass); border:1px solid var(--border); border-radius:16px; padding:18px; margin-bottom:12px; }
+.r-title { font-size:12px; font-weight:700; color:var(--accent2); letter-spacing:1px; text-transform:uppercase; margin-bottom:4px; display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+.r-use { font-size:13px; color:var(--text3); margin-bottom:14px; }
+.boxes-wrap { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
+.box-chip { display:flex; align-items:center; gap:7px; background:rgba(255,255,255,0.04); border:1px solid var(--border); border-radius:20px; padding:6px 14px; }
+.dot { width:9px; height:9px; border-radius:3px; flex-shrink:0; }
+
+/* ── NAVIGATOR +/- ── */
+.nav-btn { width:36px; height:36px; border-radius:9px; font-size:20px; font-weight:700; cursor:pointer; border:1px solid var(--border); background:rgba(255,255,255,0.05); transition:all 0.15s; flex-shrink:0; }
+.nav-btn:not(:disabled):hover { border-color:rgba(124,111,255,0.4); color:var(--accent2); }
+.nav-btn:disabled { opacity:0.25; cursor:default; }
+
+/* ── SUMMARY ── */
+.summary-card { background:rgba(124,111,255,0.06); border:1px solid rgba(124,111,255,0.15); border-radius:16px; padding:20px; margin-top:12px; }
+.s-row { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; gap:10px; }
+.s-total { border-top:1px solid rgba(124,111,255,0.15); margin-top:16px; padding-top:16px; display:flex; justify-content:space-between; align-items:baseline; }
+
+/* ── AMAZON ── */
+.cart-section { background:rgba(251,191,36,0.05); border:1px solid rgba(251,191,36,0.15); border-radius:16px; padding:20px; margin-top:14px; }
+.btn-cart { display:flex; align-items:center; justify-content:center; gap:10px; background:linear-gradient(135deg,#f59e0b,#fcd34d); color:#000; border:none; border-radius:12px; padding:17px 20px; font-weight:800; font-size:15px; cursor:pointer; width:100%; font-family:inherit; margin-top:12px; text-decoration:none; transition:all 0.15s; box-shadow:0 4px 18px rgba(245,158,11,0.25); }
+.btn-cart:hover { transform:translateY(-1px); box-shadow:0 6px 24px rgba(245,158,11,0.35); }
+.btn-cart-sm { display:inline-flex; align-items:center; gap:5px; background:linear-gradient(135deg,#f59e0b,#fcd34d); color:#000; border:none; border-radius:8px; padding:8px 14px; font-weight:700; font-size:12px; cursor:pointer; font-family:inherit; text-decoration:none; flex-shrink:0; }
+
+/* ── ERROR ── */
+.error-box { background:rgba(248,113,113,0.07); border:1px solid rgba(248,113,113,0.25); border-radius:10px; padding:14px 16px; color:var(--rose); font-size:13px; margin-top:12px; line-height:1.6; }
+
+/* ── CANVAS note ── */
+.depth-label { font-size:11px; color:var(--text3); margin-top:5px; font-style:italic; }
+
+.page { display:none; } .page.active { display:block; }
+canvas { border-radius:8px; display:block; }
+.disclaimer { font-size:11px; color:var(--text3); margin-top:12px; line-height:1.6; }
+
+@media (max-width:400px) {
+  body { font-size:14px; }
+  .btn-cart { font-size:13px; padding:14px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Fridge<span>Fit</span></div>
+  <div class="logo-sub">AI Powered</div>
+  <span class="brand-pill">× Duralex Freshbox</span>
+</header>
+
+<div class="steps">
+  <div class="step active" id="tab1">01 · Frigo</div>
+  <div class="step" id="tab2">02 · Clayettes</div>
+  <div class="step" id="tab3">03 · Mon kit 🛒</div>
+</div>
+
+<div class="body">
+
+  <!-- ═══════ PAGE 1 ═══════ -->
+  <div class="page active" id="page1">
+    <div class="section-label">Recherche par référence</div>
+    <div class="card">
+      <p style="font-size:14px;color:var(--text2);margin-bottom:16px;line-height:1.7">
+        Tape la référence de ton frigo (étiquette intérieure ou notice). L'IA récupère les dimensions automatiquement.
+      </p>
+      <div class="search-wrap">
+        <input type="text" id="search-input" class="search-input" placeholder="ex: Neff KI1811SE0, Bosch KGN39…" />
+        <button class="search-btn" id="search-btn" onclick="searchFridge()">GO →</button>
+      </div>
+      <div class="examples">
+        <span class="ex-pill" onclick="setEx(this)">Neff KI1811SE0</span>
+        <span class="ex-pill" onclick="setEx(this)">Bosch KGN39XIDR</span>
+        <span class="ex-pill" onclick="setEx(this)">Samsung RB38T776CS9</span>
+        <span class="ex-pill" onclick="setEx(this)">LG GBB72PZEFN</span>
+        <span class="ex-pill" onclick="setEx(this)">Liebherr CNef 4813</span>
+        <span class="ex-pill" onclick="setEx(this)">Smeg FAB32ROR5</span>
+        <span class="ex-pill" onclick="setEx(this)">Whirlpool W7X82OOX</span>
+        <span class="ex-pill" onclick="setEx(this)">Siemens KG39NXXDF</span>
+        <span class="ex-pill" onclick="setEx(this)">AEG RCB636E5MW</span>
+        <span class="ex-pill" onclick="setEx(this)">Haier HTF-610DSN7</span>
+      </div>
+    </div>
+    <div id="loader" style="display:none" class="loader">
+      <div class="spinner"></div>
+      <div style="font-size:13px;color:var(--text3);margin-top:16px;letter-spacing:1px">Analyse en cours…</div>
+    </div>
+    <div id="error-box" style="display:none" class="error-box"></div>
+    <div id="fridge-result" style="display:none"></div>
+    <!-- Clé API et tag cachés -->
+    <input type="hidden" id="affiliate-tag" value="maxlec-21" />
+    <div style="display:none">
+      <input type="password" id="api-key-input" value="" />
+    </div>
+  </div>
+
+  <!-- ═══════ PAGE 2 ═══════ -->
+  <div class="page" id="page2">
+    <div class="section-label">Ajuste tes clayettes</div>
+    <div id="fridge-info-p2"></div>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:18px;line-height:1.7">
+      Modifie <strong style="color:var(--accent2)">Haut.</strong> selon tes vraies mesures — l'espace libre entre deux étagères, mesuré avec un mètre.
+    </p>
+    <div id="shelves-container"></div>
+    <button class="btn-add" onclick="addShelf()">+ Ajouter une clayette</button>
+    <div class="two-btn">
+      <button class="btn btn-secondary" onclick="goTo(1)">← Retour</button>
+      <button class="btn btn-primary" onclick="calculate()">CALCULER MON KIT →</button>
+    </div>
+  </div>
+
+  <!-- ═══════ PAGE 3 ═══════ -->
+  <div class="page" id="page3">
+    <div class="section-label" id="result-label">Ton kit Duralex</div>
+    <div id="results-container"></div>
+    <div class="summary-card" id="summary-container"></div>
+    <div class="cart-section">
+      <div style="font-size:13px;font-weight:700;color:var(--amber);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">🛒 Panier Amazon groupé</div>
+      <p style="font-size:13px;color:var(--text2);line-height:1.6">Un clic — toutes les boîtes Duralex Freshbox ajoutées dans ton panier Amazon.fr.</p>
+      <a id="cart-link" href="#" target="_blank" class="btn-cart">🛒 OUVRIR MON PANIER AMAZON.FR →</a>
+      <div id="individual-links" style="margin-top:18px"></div>
+      <div class="disclaimer" id="aff-note"></div>
+      <div style="margin-top:14px;padding:10px 14px;background:rgba(255,255,255,0.025);border:1px solid var(--border2);border-radius:9px;font-size:11px;color:var(--text3);line-height:1.6">
+        En tant que Partenaire Amazon, je réalise un bénéfice sur les achats remplissant les conditions requises.
+      </div>
+    </div>
+    <button class="btn btn-secondary" onclick="goTo(2)" style="margin-top:12px">← Modifier les clayettes</button>
+    <button class="btn btn-secondary" onclick="goTo(1)">🔍 Tester un autre frigo</button>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CATALOGUE DURALEX FRESHBOX
+// ═══════════════════════════════════════════════════════════
+const SS = {
+  XS:   { id:'XS',   name:'Freshbox XS 0.39L', w:10.3, h:4.5, d:15, color:'#6ee7b7', price:7.00,  label:'Condiments, sauces, petits restes',   vol:'0.39L', asin:'B09ZBM8851' },
+  S:    { id:'S',    name:'Freshbox S 1.1L',   w:14.5, h:6.7, d:19, color:'#67e8f9', price:9.30,  label:'Fromages, charcuterie, yaourts',       vol:'1.1L',  asin:'B09ZBL5WVM' },
+  M:    { id:'M',    name:'Freshbox M 1.65L',  w:16.3, h:7.8, d:21, color:'#a5b4fc', price:10.90, label:'Restes, plats individuels, légumes',   vol:'1.65L', asin:'B09ZBL5WVM' },
+  L:    { id:'L',    name:'Freshbox L 2.9L',   w:20,   h:9,   d:27, color:'#fcd34d', price:14.90, label:'Grands plats, salades, fruits coupés', vol:'2.9L',  asin:'B09ZBL5WVM' },
+  SLIM: { id:'SLIM', name:'Freshbox XS 0.39L', w:10.3, h:4.5, d:15, color:'#fda4af', price:7.00,  label:'Viandes plates, poissons',             vol:'0.39L', asin:'B09ZBM8851' },
+};
+
+let fridgeData=null, shelves=[];
+const _configCache={}, shelfConfigChoice={};
+
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function goTo(n, noScroll=false) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active','done'));
+  document.getElementById('page'+n).classList.add('active');
+  document.getElementById('tab'+n).classList.add('active');
+  for(let i=1;i<n;i++) document.getElementById('tab'+i).classList.add('done');
+  if(!noScroll) window.scrollTo(0,0);
+  if(n===2) renderShelves();
+  if(n===1){ Object.keys(_configCache).forEach(k=>delete _configCache[k]); Object.keys(shelfConfigChoice).forEach(k=>delete shelfConfigChoice[k]); }
+}
+function setEx(el){ document.getElementById('search-input').value=el.textContent; document.getElementById('search-input').focus(); }
+function getTag(){ return 'maxlec-21'; }
+function getApiKey(){ try{ return localStorage.getItem('ff_api_key')||''; }catch(e){ return ''; } }
+
+// ═══════════════════════════════════════════════════════════
+// RECHERCHE IA — Claude Haiku
+// ═══════════════════════════════════════════════════════════
+async function searchFridge() {
+  const q=document.getElementById('search-input').value.trim();
+  if(!q) return;
+  document.getElementById('loader').style.display='block';
+  document.getElementById('error-box').style.display='none';
+  document.getElementById('fridge-result').style.display='none';
+  document.getElementById('search-btn').disabled=true;
+
+  const prompt=`Tu es une base de données d'appareils électroménagers mondial.
+Référence frigo: "${q}"
+Réponds UNIQUEMENT en JSON valide, sans texte avant/après ni backticks markdown.
+{"found":true,"brand":"Neff","model":"KI1811SE0","type":"Réfrigérateur intégrable 1 porte tout utile","total_dims":{"w_cm":54.1,"h_cm":177.2,"d_cm":54.8},"interior":{"w_cm":50,"h_cm":155,"d_cm":38},"shelves":[{"name":"Zone haute","w_cm":50,"h_cm":22,"d_cm":38,"usage":"Grands contenants, bouteilles debout"},{"name":"Clayette 1","w_cm":50,"h_cm":20,"d_cm":38,"usage":"Restes, plats préparés"},{"name":"Clayette 2","w_cm":50,"h_cm":16,"d_cm":38,"usage":"Fromages, charcuterie"},{"name":"Clayette 3","w_cm":50,"h_cm":20,"d_cm":38,"usage":"Restes, plats"},{"name":"Bac légumes","w_cm":50,"h_cm":15,"d_cm":38,"usage":"Fruits et légumes"}],"confidence":"high","note":"Données constructeur confirmées"}
+Règles: confidence high=connu précisément, estimated=estimation gamme, unknown=inconnu. Dimensions intérieures réalistes (ext-4cm). Clayettes adaptées au type. Hauteurs libres réalistes 12-25cm.`;
+
+  const apiKey = getApiKey();
+  if(!apiKey){
+    document.getElementById('error-box').innerHTML='❌ Clé API manquante. <a href="https://console.anthropic.com" target="_blank" style="color:var(--accent2)">Obtenir une clé gratuite</a> sur console.anthropic.com → API Keys.';
+    document.getElementById('error-box').style.display='block';
+    document.getElementById('loader').style.display='none';
+    document.getElementById('search-btn').disabled=false;
+    return;
+  }
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{ 'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true' },
+      body:JSON.stringify({ model:'claude-haiku-4-5-20251001', max_tokens:1200, messages:[{role:'user',content:prompt}] })
+    });
+    const data=await res.json();
+    if(data.error) throw new Error(data.error.message||JSON.stringify(data.error));
+    const text=(data.content||[]).map(c=>c.text||'').join('');
+    fridgeData=JSON.parse(text.replace(/```json|```/g,'').trim());
+    shelves=(fridgeData.shelves||[]).map(s=>({name:s.name,w:s.w_cm,h:s.h_cm,d:s.d_cm,usage:s.usage||''}));
+    Object.keys(_configCache).forEach(k=>delete _configCache[k]);
+    Object.keys(shelfConfigChoice).forEach(k=>delete shelfConfigChoice[k]);
+    renderFridgeResult(); renderFridgeInfoP2();
+    document.getElementById('fridge-result').style.display='block';
+  }catch(e){
+    document.getElementById('error-box').textContent='❌ '+( e.message||'Vérifie ta connexion et réessaie.');
+    document.getElementById('error-box').style.display='block';
+  }finally{
+    document.getElementById('loader').style.display='none';
+    document.getElementById('search-btn').disabled=false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// RENDU RÉSULTAT FRIGO
+// ═══════════════════════════════════════════════════════════
+const BADGE_MAP={
+  high:      {lbl:'✓ Données constructeur', cls:'badge-high'},
+  medium:    {lbl:'~ Données estimées',      cls:'badge-estimated'},
+  estimated: {lbl:'~ Estimation par gamme',  cls:'badge-estimated'},
+  unknown:   {lbl:'⚠ Modèle non reconnu',   cls:'badge-unknown'},
+};
+function renderFridgeResult(){
+  if(!fridgeData) return;
+  const b=BADGE_MAP[fridgeData.confidence]||BADGE_MAP.unknown;
+  const td=fridgeData.total_dims||{}, inn=fridgeData.interior||{};
+  document.getElementById('fridge-result').innerHTML=`
+    <div class="card" style="border-color:${fridgeData.confidence==='high'?'rgba(52,211,153,0.2)':'rgba(251,191,36,0.2)'};margin-top:6px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div>
+          <div style="font-size:22px;font-weight:800;color:#fff;line-height:1.2">${fridgeData.brand||''} ${fridgeData.model||''}</div>
+          <div style="font-size:13px;color:var(--text2);margin-top:4px;font-weight:400">${fridgeData.type||''}</div>
+        </div>
+        <span class="badge ${b.cls}">${b.lbl}</span>
+      </div>
+      ${td.w_cm?`<div class="data-row"><span class="k">Dimensions ext.</span><span class="v">${td.w_cm} × ${td.h_cm} × ${td.d_cm} cm</span></div>`:''}
+      ${inn.w_cm?`<div class="data-row"><span class="k">Intérieur utile</span><span class="v">${inn.w_cm} × ${inn.h_cm} × ${inn.d_cm} cm</span></div>`:''}
+      <div class="data-row"><span class="k">Clayettes détectées</span><span class="va">${shelves.length} niveaux</span></div>
+      ${fridgeData.note?`<div style="margin-top:10px;font-size:12px;color:var(--text3);font-style:italic">${fridgeData.note}</div>`:''}
+    </div>
+    <button class="btn btn-primary" onclick="goTo(2)" style="margin-top:6px">VOIR ET AJUSTER LES CLAYETTES →</button>`;
+}
+function renderFridgeInfoP2(){
+  if(!fridgeData) return;
+  document.getElementById('fridge-info-p2').innerHTML=`
+    <div class="card" style="margin-bottom:16px;padding:14px 18px;display:flex;align-items:center;gap:12px">
+      <div style="font-size:16px;font-weight:800;color:#fff">${fridgeData.brand} ${fridgeData.model}</div>
+      <div style="color:var(--text3);font-size:13px">${fridgeData.type||''}</div>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+// ÉDITEUR CLAYETTES
+// ═══════════════════════════════════════════════════════════
+function renderShelves(){
+  document.getElementById('shelves-container').innerHTML=shelves.map((s,i)=>`
+    <div class="shelf-card">
+      <input type="text" class="shelf-name-input" value="${s.name}" onchange="updS(${i},'name',this.value)" />
+      <div class="shelf-use-lbl">${s.usage||''}</div>
+      <div class="dims-row">
+        <div class="dim-g"><input type="number" value="${s.w}" onchange="updS(${i},'w',this.value)"><div class="dim-lbl">Largeur</div></div>
+        <div class="dim-g"><input type="number" class="hl" value="${s.h}" onchange="updS(${i},'h',this.value)"><div class="dim-lbl hl">Haut. ✏</div></div>
+        <div class="dim-g"><input type="number" value="${s.d}" onchange="updS(${i},'d',this.value)"><div class="dim-lbl">Profond.</div></div>
+      </div>
+      <div class="shelf-actions"><button class="btn-sm" onclick="removeShelf(${i})">✕ Supprimer</button></div>
+    </div>`).join('');
+}
+function updS(i,k,v){ if(k==='name'||k==='usage') shelves[i][k]=v; else shelves[i][k]=parseFloat(v)||0; }
+function addShelf(){ const inn=fridgeData?.interior||{}; shelves.push({name:`Clayette ${shelves.length+1}`,w:inn.w_cm||50,h:18,d:inn.d_cm||35,usage:'Usage général'}); renderShelves(); }
+function removeShelf(i){ shelves.splice(i,1); renderShelves(); }
+
+// ═══════════════════════════════════════════════════════════
+// NIVEAUX +/- avec notes contextuelles
+// ═══════════════════════════════════════════════════════════
+const CONFIG_NOTES={
+  'L+S': '🟡 La boîte L pour les grands plats cuisinés, lasagnes, rôtis. Les boîtes S pour les accompagnements, fromages et restes.',
+  'L':   '🟡 La boîte L seule — idéale pour les salades composées, légumes entiers et plats familiaux.',
+  'M+S': '🟣 Les boîtes M pour les plats du quotidien et légumes. Les boîtes S pour les fromages, charcuterie et petits restes.',
+  'M+XS':'🟣 Les boîtes M pour les restes et légumes. Les boîtes XS pour condiments, sauces et petites quantités.',
+  'M':   '🟣 Les boîtes M — format polyvalent pour les restes d\'un plat pour 2, légumes coupés et batch cooking.',
+  'S+XS':'🔵 Les boîtes S pour fromages et charcuterie. Les boîtes XS pour condiments et toutes petites portions.',
+  'S':   '🔵 Les boîtes S — parfaites pour fromages, yaourts, charcuterie et fruits coupés.',
+  'XS':  '🟢 Les boîtes XS — idéales pour condiments, sauces, épices humides et restes minuscules.',
+  'SLIM+S':'🔴 Les boîtes Slim ultra-plates pour viandes et poissons à plat. Les boîtes S pour fromages côte à côte.',
+  'SLIM':'🔴 Les boîtes Slim — ultra-plates pour viandes, poissons et charcuterie dans les espaces très bas.',
+};
+function noteForBoxes(boxes){ const k=boxes.map(b=>b.id).join('+'); return CONFIG_NOTES[k]||CONFIG_NOTES[boxes[0]?.id]||'Rangement optimisé pour cet espace.'; }
+
+function getLevels(shelf){
+  const {h,w,d}=shelf, ck=`lvl_${h}_${w}_${d}`;
+  if(_configCache[ck]) return _configCache[ck];
+  const fits=b=>b.h+0.3<=h&&b.d<=d+3&&b.w<=w;
+  function bld(list){
+    const boxes=[]; let usedW=0;
+    for(const box of list){
+      if(!fits(box)) continue;
+      const remW=w-usedW; if(remW<box.w) continue;
+      const cols=Math.floor(remW/box.w); if(cols<1) continue;
+      const rows=Math.max(1,Math.floor(d/box.d));
+      boxes.push({...box,cols,rows,count:cols*rows}); usedW+=cols*box.w;
+    }
+    if(!boxes.length) return null;
+    return {boxes,note:noteForBoxes(boxes)};
+  }
+  const seq=[];
+  const combos=h<=6.5?[[SS.SLIM,SS.S]]:[[SS.L,SS.S],[SS.M,SS.S],[SS.M,SS.XS],[SS.S],[SS.S,SS.XS],[SS.XS]];
+  combos.forEach(c=>{
+    const l=bld(c); if(!l) return;
+    const k=l.boxes.map(b=>b.id+b.cols+b.rows).join('|');
+    if(!seq.some(s=>s.boxes.map(b=>b.id+b.cols+b.rows).join('|')===k)) seq.push(l);
+  });
+  return(_configCache[ck]=seq.length?seq:null);
+}
+function getAllConfigs(shelf){ return getLevels(shelf); }
+
+// ═══════════════════════════════════════════════════════════
+// CANVAS — vue de dessus avec profondeur (avant + fond)
+// ═══════════════════════════════════════════════════════════
+function drawShelf(canvas, shelf, boxes){
+  const ctx=canvas.getContext('2d'), W=canvas.width, H=canvas.height;
+  const maxRows=Math.max(...boxes.map(b=>b.rows),1);
+  const rowH=H/maxRows, sc=W/shelf.w;
+
+  // Fond
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'rgba(26,30,53,0.98)');
+  bg.addColorStop(1,'rgba(13,15,26,0.99)');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  // Séparateur avant/arrière
+  if(maxRows>=2){
+    ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(0,rowH); ctx.lineTo(W,rowH); ctx.stroke(); ctx.setLineDash([]);
+    ctx.font='10px Plus Jakarta Sans,sans-serif'; ctx.textBaseline='middle'; ctx.textAlign='left';
+    ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.fillText('AVANT',5,rowH*0.5);
+    ctx.fillStyle='rgba(255,255,255,0.15)'; ctx.fillText('FOND',5,rowH*1.5);
+  }
+
+  let cx=0;
+  boxes.forEach(box=>{
+    const bw=box.w*sc;
+    for(let col=0;col<box.cols;col++){
+      const x=cx+col*bw;
+      for(let row=0;row<box.rows;row++){
+        const y=row*rowH;
+        // Opacité réduite pour la rangée fond
+        const op=row===0?0.90:0.55;
+
+        // Ombre
+        ctx.globalAlpha=0.18; ctx.fillStyle='#000';
+        ctx.beginPath(); ctx.roundRect(x+3,y+3,bw-5,rowH-5,5); ctx.fill();
+
+        // Corps de la boîte
+        ctx.globalAlpha=op; ctx.fillStyle=box.color;
+        ctx.beginPath(); ctx.roundRect(x+2,y+2,bw-5,rowH-5,5); ctx.fill();
+
+        // Reflet haut
+        ctx.globalAlpha=1;
+        const g=ctx.createLinearGradient(x,y,x,y+rowH*0.42);
+        g.addColorStop(0,'rgba(255,255,255,0.22)'); g.addColorStop(1,'rgba(255,255,255,0)');
+        ctx.fillStyle=g; ctx.beginPath(); ctx.roundRect(x+2,y+2,bw-5,rowH*0.42,5); ctx.fill();
+
+        // Label ID
+        if(bw>16){
+          ctx.fillStyle='rgba(0,0,0,0.72)';
+          ctx.font=`bold ${Math.max(8,Math.min(11,bw/2.5))}px Plus Jakarta Sans,sans-serif`;
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(box.id, x+bw/2, y+rowH/2);
+        }
+      }
+    }
+    cx+=box.cols*bw;
+  });
+
+  // Zone vide
+  ctx.globalAlpha=1;
+  if(cx<W-2){
+    ctx.fillStyle='rgba(124,111,255,0.05)'; ctx.fillRect(cx+1,1,W-cx-2,H-2);
+    ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.font='11px sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    if(W-cx>20) ctx.fillText('∅',cx+(W-cx)/2,H/2);
+  }
+  ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.lineWidth=1; ctx.strokeRect(0.5,0.5,W-1,H-1);
+}
+
+// ═══════════════════════════════════════════════════════════
+// CALCUL + RÉSULTAT
+// ═══════════════════════════════════════════════════════════
+function buildCartUrl(items,tag){
+  return 'https://www.amazon.fr/gp/aws/cart/add.html?'
+    +items.map((it,i)=>`ASIN.${i+1}=${it.asin}&Quantity.${i+1}=${it.qty}`).join('&')
+    +'&tag='+tag;
+}
+
+function calculate(fromNav=false){
+  const scrollY = fromNav ? window.scrollY : 0;
+  const tag=getTag();
+  const results=shelves.map((s,i)=>({shelf:s,shelfIdx:i,configs:getAllConfigs(s)}));
+  const rc=document.getElementById('results-container'); rc.innerHTML='';
+
+  results.forEach(r=>{
+    const div=document.createElement('div'); div.className='result-card';
+    const isCongel=r.shelf.name.toLowerCase().includes('congél')||(r.shelf.usage||'').toLowerCase().includes('congél');
+    if(isCongel){
+      div.innerHTML=`<div class="r-title">${r.shelf.name.toUpperCase()}</div><div style="font-size:13px;color:var(--text3);padding:4px 0">❄️ Zone congélateur — non incluse dans le kit.</div>`;
+      rc.appendChild(div); return;
+    }
+
+    const sk=`${r.shelf.h}_${r.shelf.w}_${r.shelf.d}`;
+    const twins=results.filter(x=>`${x.shelf.h}_${x.shelf.w}_${x.shelf.d}`===sk&&x.shelfIdx!==r.shelfIdx);
+    const tb=twins.length
+      ? `<span style="font-size:11px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);border-radius:20px;padding:2px 9px;color:var(--teal)">= ${twins.map(t=>t.shelf.name).join(', ')}</span>`
+      : '';
+    div.innerHTML=`
+      <div class="r-title">${r.shelf.name.toUpperCase()}
+        <span style="color:var(--text3);font-size:10px;font-weight:500">${r.shelf.w}×${r.shelf.h}×${r.shelf.d} cm</span>
+        ${tb}
+      </div>
+      <div class="r-use">${r.shelf.usage||''}</div>`;
+
+    if(!r.configs||!r.configs.length){
+      div.innerHTML+='<div style="font-size:13px;color:var(--text3);padding:4px 0">Espace insuffisant pour les boîtes disponibles.</div>';
+      rc.appendChild(div); return;
+    }
+
+    const levels=r.configs;
+    const curIdx=Math.min(shelfConfigChoice[r.shelfIdx]||0,levels.length-1);
+    const chosen=levels[curIdx];
+    if(!chosen){ rc.appendChild(div); return; }
+
+    // Navigateur +/-
+    const nav=document.createElement('div'); nav.style.cssText='display:flex;align-items:center;gap:10px;margin-bottom:12px;';
+    const bM=document.createElement('button'); bM.className='nav-btn'; bM.textContent='−'; bM.disabled=curIdx===0;
+    bM.style.color=curIdx===0?'var(--text3)':'var(--accent2)';
+    bM.onclick=()=>{ shelfConfigChoice[r.shelfIdx]=Math.max(0,curIdx-1); calculate(true); };
+    const lbl=document.createElement('div'); lbl.style.cssText='flex:1;text-align:center;';
+    const sum=chosen.boxes.map(b=>`${b.cols*b.rows}× ${b.id}`).join(' + ');
+    const tot=chosen.boxes.reduce((s,b)=>s+b.cols*b.rows,0);
+    lbl.innerHTML=`<div style="font-size:14px;font-weight:700;color:#fff">${sum}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${tot} boîte${tot>1?'s':''} · niveau ${curIdx+1}/${levels.length}</div>`;
+    const bP=document.createElement('button'); bP.className='nav-btn'; bP.textContent='+'; bP.disabled=curIdx===levels.length-1;
+    bP.style.color=curIdx===levels.length-1?'var(--text3)':'var(--accent2)';
+    bP.onclick=()=>{ shelfConfigChoice[r.shelfIdx]=Math.min(levels.length-1,curIdx+1); calculate(true); };
+    nav.append(bM,lbl,bP); div.appendChild(nav);
+
+    // Note contextuelle
+    const note=document.createElement('div');
+    note.style.cssText='font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:12px;padding:10px 14px;background:rgba(124,111,255,0.06);border-left:3px solid rgba(124,111,255,0.3);border-radius:0 8px 8px 0;';
+    note.textContent=chosen.note; div.appendChild(note);
+
+    // Canvas — profondeur visible
+    const maxR=Math.max(...chosen.boxes.map(b=>b.rows),1);
+    const cvH=Math.min(140,Math.max(55,maxR*58));
+    const cv=document.createElement('canvas'); cv.width=290; cv.height=cvH;
+    div.appendChild(cv);
+    if(maxR>=2){
+      const dl=document.createElement('div'); dl.className='depth-label';
+      dl.textContent=`Vue de dessus — ${maxR} rangées (avant + fond de frigo)`; div.appendChild(dl);
+    }
+    setTimeout(()=>drawShelf(cv,r.shelf,chosen.boxes),0);
+
+    // Chips
+    const wrap=document.createElement('div'); wrap.className='boxes-wrap';
+    chosen.boxes.forEach(b=>{
+      wrap.innerHTML+=`<div class="box-chip"><div class="dot" style="background:${b.color}"></div><span style="font-size:13px;color:var(--text);font-weight:600">${b.count}× ${b.name}</span><span style="font-size:12px;color:var(--text3)">${b.label}</span></div>`;
+    });
+    div.appendChild(wrap); rc.appendChild(div);
+  });
+
+  // ── Récap agrégé par ID (pas par ASIN — plusieurs tailles = même ASIN Duralex)
+  const idMap={};
+  results.forEach(r=>{
+    const ic=r.shelf.name.toLowerCase().includes('congél')||(r.shelf.usage||'').toLowerCase().includes('congél');
+    if(ic||!r.configs||!r.configs.length) return;
+    const idx=Math.min(shelfConfigChoice[r.shelfIdx]||0,r.configs.length-1);
+    const chosen=r.configs[idx]; if(!chosen?.boxes) return;
+    chosen.boxes.forEach(b=>{
+      if(!b.asin) return;
+      if(!idMap[b.id]) idMap[b.id]={...b,qty:0};
+      idMap[b.id].qty+=b.count;
+    });
+  });
+
+  let totalPrice=0, totalQty=0;
+  const cartAsinMap={};
+  let sumHtml=`<div style="font-size:13px;font-weight:700;color:var(--accent2);letter-spacing:1px;margin-bottom:18px;text-transform:uppercase">Récap commande</div>`;
+  sumHtml+=`<div style="font-size:12px;color:var(--text3);letter-spacing:0.5px;margin-bottom:12px;font-weight:600;text-transform:uppercase">📦 Duralex Freshbox — boîtes en verre</div>`;
+
+  Object.values(idMap).forEach(b=>{
+    const t=b.price*b.qty; totalPrice+=t; totalQty+=b.qty;
+    if(!cartAsinMap[b.asin]) cartAsinMap[b.asin]=0;
+    cartAsinMap[b.asin]+=b.qty;
+    sumHtml+=`<div class="s-row">
+      <div style="display:flex;align-items:flex-start;gap:12px;flex:1">
+        <div class="dot" style="background:${b.color};margin-top:4px;width:10px;height:10px;border-radius:3px;flex-shrink:0"></div>
+        <div>
+          <div style="font-size:15px;font-weight:600;color:var(--text)">${b.qty}× ${b.name}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px">${b.label} · ${b.vol}</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">ASIN : ${b.asin} · ${b.price.toFixed(2)} €/u</div>
+        </div>
+      </div>
+      <div style="flex-shrink:0;text-align:right">
+        <div style="font-size:16px;font-weight:700;color:var(--accent2)">${t.toFixed(2)} €</div>
+      </div>
+    </div>`;
+  });
+
+  sumHtml+=`<div style="font-size:12px;color:var(--text3);margin:12px 0 4px;font-style:italic">✓ Couvercle inclus · Emboîtables · Made in France</div>`;
+  sumHtml+=`<div class="s-total">
+    <span style="font-size:15px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px">Total panier</span>
+    <span style="font-size:26px;font-weight:800;color:var(--accent2)">${totalPrice.toFixed(2)} €</span>
+  </div>`;
+  document.getElementById('summary-container').innerHTML=sumHtml;
+
+  if(fridgeData) document.getElementById('result-label').textContent=`Ton kit — ${fridgeData.brand} ${fridgeData.model}`;
+
+  // Panier Amazon groupé — 1 ligne par ASIN dédupliqué
+  const cartItems=Object.entries(cartAsinMap).map(([asin,qty])=>({asin,qty}));
+  document.getElementById('cart-link').href=buildCartUrl(cartItems,tag);
+
+  // Liens individuels par taille
+  let indHtml=`<div style="font-size:12px;color:var(--text3);letter-spacing:0.5px;margin-bottom:12px;font-weight:600;text-transform:uppercase">Ou article par article :</div>`;
+  Object.values(idMap).forEach(b=>{
+    const url=`https://www.amazon.fr/dp/${b.asin}?tag=${tag}`;
+    indHtml+=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:14px;color:var(--text);font-weight:600">${b.qty}× ${b.name}</div>
+        <div style="font-size:12px;color:var(--text3)">${(b.price*b.qty).toFixed(2)} €</div>
+      </div>
+      <a href="${url}" target="_blank" class="btn-cart-sm">🛒 Amazon.fr</a>
+    </div>`;
+  });
+  document.getElementById('individual-links').innerHTML=indHtml;
+  document.getElementById('aff-note').innerHTML=`<a href="https://partenaires.amazon.fr" target="_blank" style="color:var(--text3)">Programme Partenaires Amazon</a>`;
+  goTo(3, fromNav);
+  if(fromNav) requestAnimationFrame(()=> window.scrollTo(0, scrollY));
+}
+
+// ═══════════════════════════════════════════════════════════
+// INIT — clé API depuis localStorage, invisible pour l'utilisateur
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('search-input').addEventListener('keydown',e=>{ if(e.key==='Enter') searchFridge(); });
+  // Restaurer la clé depuis le navigateur
+  try{
+    const saved=localStorage.getItem('ff_api_key');
+    if(saved) document.getElementById('api-key-input').value=saved;
+  }catch(e){}
+});
+
+// Fonction utilitaire pour saisir la clé (accessible via console navigateur si besoin)
+function setApiKey(key){ try{ localStorage.setItem('ff_api_key',key); document.getElementById('api-key-input').value=key; console.log('✅ Clé API enregistrée'); }catch(e){ console.error(e); } }
+</script>
+</body>
+</html>
